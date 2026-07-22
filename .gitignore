@@ -19,3 +19,7 @@ debug.keystore
 *.jks
 *.keystore
 my-upload-key.jks
+
+# ビルド成果物。配布は GitHub Releases で行う
+*.apk
+*.aab
