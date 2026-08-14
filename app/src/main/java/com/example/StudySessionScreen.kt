@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.StudyLanguage
 import com.example.viewmodel.MainViewModel
 
 @Composable
@@ -197,7 +198,8 @@ fun StudySessionScreen(viewModel: MainViewModel) {
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                val langStr = when(viewModel.selectedGroup.value?.language) { "zh" -> "中国語"; "none" -> "対象言語"; else -> "英語" }
+                val language = StudyLanguage.fromCode(viewModel.selectedGroup.value?.language)
+                val langStr = if (language.code == "none") "対象言語" else language.displayName
                 val targetText = if (langStr == "英語") "英語スペル" else "${langStr}表記"
                 Text(
                     text = if (question.directionForward) "この${langStr}の日本語訳を答えてください" else "この日本語の${targetText}を答えてください",

@@ -23,7 +23,7 @@
 ./gradlew stageDebugApk
 ```
 
-`dist-android/Tango-pro-1.2.0-android-debug.apk` が生成されます。ローカルのAndroidデバッグ鍵による署名です。
+`dist-android/Tango-pro-1.2.1-android-debug.apk` が生成されます。ローカルのAndroidデバッグ鍵による署名です。
 
 ### 正式署名
 
@@ -36,7 +36,7 @@ KEY_ALIAS=...
 KEY_PASSWORD=...
 ```
 
-署名後は `apksigner verify --verbose --print-certs` で署名者を過去版と照合し、`aapt dump badging` または端末のpackage情報でversionCode 4 / versionName 1.2.0を確認します。
+署名後は `apksigner verify --verbose --print-certs` で署名者を過去版と照合し、`aapt dump badging` または端末のpackage情報でversionCode 5 / versionName 1.2.1を確認します。
 
 ### 起動スモークテスト
 
@@ -52,6 +52,9 @@ KEY_PASSWORD=...
 10. 初期出題条件が「おすすめ」で、全語習得後も「そのまま続ける」から次の周回を開始できることを確認
 11. 問題語とスピーカーアイコンのどちらをタップしても手動読み上げされることを確認
 12. 旧版で全問／前回ミス／1回のみを選択していた場合、「おすすめ」へ移行することを確認
+13. 2冊で方向・回答形式・出題対象・問題数（必要ならタグ／範囲）を別々に変更し、切替・再起動後も各設定が復元されることを確認
+14. CSV追加時にフランス語／ポルトガル語を選択し、順方向の自動TTS、逆方向回答後、手動再生を確認
+15. 単語帳編集で言語を変更し、表示とTTSが即座に切り替わることを確認
 
 ## macOS
 
@@ -71,10 +74,13 @@ swiftc -swift-version 5 -sdk "$sdk_path" \
 Androidで書き出した実ZIPをmacOSへ、macOS fixtureをAndroidへ渡す双方向確認も行う。
 
 ```bash
+TANGO_ANDROID_FIXTURE_OUTPUT=/tmp/Tango-pro-android-v1.2.1.zip \
+  ./gradlew testDebugUnitTest \
+  --tests 'com.example.StudyArchiveCodecTest.producer output can be parsed again'
 /tmp/tango-core-self-test \
-  --android-fixture /tmp/Tango-pro-android-v1.2.0.zip \
-  --write-fixture /tmp/Tango-pro-macos-v1.2.0.zip
-TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v1.2.0.zip \
+  --android-fixture /tmp/Tango-pro-android-v1.2.1.zip \
+  --write-fixture /tmp/Tango-pro-macos-v1.2.1.zip
+TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v1.2.1.zip \
   ./gradlew testDebugUnitTest \
   --tests 'com.example.StudyArchiveCodecTest.macOS archive fixture is Android compatible when supplied'
 ```
@@ -85,6 +91,8 @@ TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v1.2.0.zip \
 macos/build_macos.sh
 macos/package_dmg.sh
 ```
+
+追加確認として、2冊に異なる出題設定を保存して再起動後に復元されること、CSV追加時と単語帳メニューの双方でフランス語／ポルトガル語を選べること、対応voiceで読み上げることを確認する。
 
 ローカルappはad-hoc署名です。公開時はDeveloper ID Applicationで署名し、Notarizationと `spctl --assess` を行います。
 

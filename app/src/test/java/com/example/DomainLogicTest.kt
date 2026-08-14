@@ -6,13 +6,32 @@ import com.example.data.Word
 import com.example.domain.AnswerNormalizer
 import com.example.domain.QuizQuestionFactory
 import com.example.domain.StudyFilterMode
+import com.example.domain.StudyLanguage
 import com.example.domain.StudyProgress
+import com.example.domain.StudySettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DomainLogicTest {
+    @Test
+    fun `French and Portuguese are supported TTS languages`() {
+        assertEquals("fr-FR", StudyLanguage.fromCode("fr").locale?.toLanguageTag())
+        assertEquals("pt-BR", StudyLanguage.fromCode("pt").locale?.toLanguageTag())
+        assertTrue(setOf("en", "zh", "fr", "pt", "none").all { it in StudyLanguage.supportedCodes })
+    }
+
+    @Test
+    fun `typing study settings normalize to reverse direction`() {
+        val normalized = StudySettings.normalize(
+            StudySettings(directionForward = true, multipleChoice = false, quizCount = 999)
+        )
+
+        assertFalse(normalized.directionForward)
+        assertEquals(StudySettings.DEFAULT_QUIZ_COUNT, normalized.quizCount)
+    }
+
     @Test
     fun `typing comparison normalizes case and character width`() {
         assertTrue(AnswerNormalizer.matches(" ＡＰＰＬＥ ", "apple"))

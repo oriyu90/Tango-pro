@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.StudyGroup
 import com.example.data.Word
 import com.example.domain.StudyFilterMode
+import com.example.domain.StudyLanguage
 import com.example.domain.StudyProgress
 import com.example.viewmodel.MainViewModel
 
@@ -61,7 +62,7 @@ fun DashboardScreen(
 
     var activeErrorLog by remember { mutableStateOf("") }
 
-    LaunchedEffect(totalCount) {
+    LaunchedEffect(selectedGroup.id, totalCount) {
         if (viewModel.rangeEnd == -1 || viewModel.rangeEnd > totalCount || viewModel.rangeEnd <= 0) {
             rangeEndText = totalCount.toString()
             viewModel.rangeEnd = totalCount
@@ -239,14 +240,14 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            val shortLangStr = when (selectedGroup.language) { "zh" -> "中"; "none" -> "外"; else -> "英" }
+                            val shortLangStr = StudyLanguage.fromCode(selectedGroup.language).shortName
                             Text("出題方向", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             if (!studyMultipleChoice) {
                                 Text("※タイピングは日→${shortLangStr}固定です", fontSize = 10.sp, color = MaterialTheme.colorScheme.error)
                             }
                         }
                         Row {
-                            val shortLangStr = when (selectedGroup.language) { "zh" -> "中"; "none" -> "外"; else -> "英" }
+                            val shortLangStr = StudyLanguage.fromCode(selectedGroup.language).shortName
                             FilterChip(
                                 selected = studyDirectionForward,
                                 onClick = { if (studyMultipleChoice) viewModel.studyDirectionForward = true },

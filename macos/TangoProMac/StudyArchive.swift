@@ -74,7 +74,7 @@ enum StudyArchiveCodec {
     private static let maxEntries = 1 + maxGroups * 2
     private static let maxEntryBytes: Int64 = 64 * 1024 * 1024
     private static let maxTotalBytes: Int64 = 256 * 1024 * 1024
-    private static let validLanguages: Set<String> = ["en", "zh", "none"]
+    private static let validLanguages = Set(StudyLanguage.allCases.map(\.rawValue))
 
     static func write(groups: [VocabGroup], to destination: URL, appVersion: String) throws {
         guard groups.count <= maxGroups else { throw StudyArchiveError.invalid("単語帳数が上限を超えています。") }

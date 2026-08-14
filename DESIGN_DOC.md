@@ -1,8 +1,8 @@
-# Tango pro v1.2.0 設計書
+# Tango pro v1.2.1 設計書
 
 ## 1. 目的と対象
 
-Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv1.2.0候補の実装を正とし、データ構造、責務、失敗時の扱い、互換性を定義する。
+Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv1.2.1の実装を正とし、データ構造、責務、失敗時の扱い、互換性を定義する。
 
 設計原則は次のとおり。
 
@@ -16,14 +16,14 @@ Tango proは、CSV単語帳を取り込んで反復学習するローカルフ�
 
 | 項目 | Android | macOS |
 | --- | --- | --- |
-| アプリ版 | 1.2.0 | 1.2.0 |
-| ビルド番号 | 4 | 4 |
+| アプリ版 | 1.2.1 | 1.2.1 |
+| ビルド番号 | 5 | 5 |
 | 最低OS | API 24 | macOS 13 |
 | 対象SDK | API 36 | macOS SDK |
 | UI | Jetpack Compose / Material 3 | SwiftUI |
 | 永続化 | Room SQLite + SharedPreferences | JSONファイル（atomic write） |
 
-AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv1.2.0では維持する。
+AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv1.2.1では維持する。
 
 ## 3. Androidアーキテクチャ
 
@@ -58,6 +58,8 @@ MainActivity
 - `AnswerNormalizer`: Unicode NFKCと小文字化によるタイピング照合
 - `QuizQuestionFactory`: 4択の重複排除とフォールバック生成
 - `BundledGroupCatalog`: 組み込みCSVの安定ID、物理名、表示名、言語
+- `StudyLanguage`: 対応言語コード、表示名、Android TTS localeの一元定義
+- `StudySettings`: 単語帳別出題設定の正規化規則
 
 ### データ層
 
@@ -67,6 +69,7 @@ MainActivity
 - `SaveDataModels`: JSONバックアップ形式version 1
 - `StudyArchiveCodec`: ZIP構造、SHA-256、CSV・進捗対応、展開量の検証
 - `StudyArchiveService`: Room snapshot exportとtransaction import、完全一致判定、統合
+- `StudySettingsPreferences`: Androidの単語帳ID別出題設定と旧共通設定の移行
 
 ## 4. Androidデータモデル
 
@@ -77,7 +80,7 @@ MainActivity
 | id | Long / PK | 自動採番 |
 | name | String | 表示名 |
 | createdAt | Long | 作成時刻（epoch ms） |
-| language | String | `en` / `zh` / `none` |
+| language | String | `en` / `zh` / `fr` / `pt` / `none` |
 | sortOrder | Int | 昇順表示 |
 
 ### words
@@ -132,9 +135,11 @@ WHERE id = :wordId
 
 旧版で保存された `all`、`incorrect`、`learned_once` および未知のIDは、Android起動時に `recommend` へ移行する。タグ・範囲条件は成績条件で候補を絞った後、ランダム化・おすすめ優先順位付けの前に適用する。
 
+出題方向、回答形式、出題対象、問題数は単語帳ごとに保持する。Androidはさらにタグ、範囲、絞り込み有効状態を単語帳ID付きSharedPreferencesへ保存する。v1.2.0以前の共通キーは各単語帳が初めて選択されたときの初期値として一度だけ移行し、その後は相互に上書きしない。macOSは `VocabGroup.studySettings` に任意値として保存し、旧JSONでフィールドが欠ける場合は既定値へフォールバックする。
+
 `recommend` は習得済みも候補から除外しない。そのため全語が習得済みになった後も、3周目、4周目以降を同じ単語帳で繰り返せる。セッション終了時には最後に使用した単語帳、方向、回答形式、条件、問題数、タグ・範囲を保持し、「そのまま続ける」で同じ設定の新規セッションを開始する。
 
-手動TTSはスピーカーアイコンだけでなく問題語全体を操作領域とする。自動読み上げ設定が無効でも手動再生は利用できる。
+手動TTSはスピーカーアイコンだけでなく問題語全体を操作領域とする。自動読み上げ設定が無効でも手動再生は利用できる。対応言語は英語 `en-US`、中国語 `zh-CN`、フランス語 `fr-FR`、ポルトガル語 `pt-BR` である。macOSは同言語のインストール済みvoiceを優先locale順で探索する。順方向では問題文、逆方向では回答確定後の対象語を読み上げる。
 
 4択問題は正解1件と誤答3件を必要とする。誤答候補は正解文字列を除外し、文字列単位で重複排除する。実データが不足する場合のみ、正解と重ならない表示用フォールバックを追加する。
 
@@ -196,7 +201,7 @@ groups/group-0001/progress.json
 
 ## 10. 設定とバックアップ
 
-AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。音量は0.0〜1.0、問題数は有効範囲に丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
+AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。テーマ・TTS・音量・効果音はアプリ共通、出題設定は単語帳ID別である。音量は0.0〜1.0、問題数は有効範囲に丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
 
 AndroidのJSONセーブデータversion 1はグループ名、言語、語句、タグ、発音、学習回数、直近正誤、直近時刻を含む。UI設定とグループ順は含めない。未知のversionは拒否する。
 
@@ -206,7 +211,7 @@ Android Auto BackupではデータベースとSharedPreferencesを対象とす�
 
 ## 11. macOS版
 
-macOS版はSwiftUIの `TangoStore` が画面状態と業務処理を保持する。保存先JSONは一時ファイルを介したatomic writeで更新し、専用serial queueで競合を避ける。保存形式version 1以外はエラーとして読み込みを停止する。
+macOS版はSwiftUIの `TangoStore` が画面状態と業務処理を保持する。保存先JSONは一時ファイルを介したatomic writeで更新し、専用serial queueで競合を避ける。保存形式version 1以外はエラーとして読み込みを停止する。単語帳ごとの `studySettings` はoptionalとして追加し、v1.2.0以前のJSONを形式version変更なしで読み込める。
 
 AndroidとCSV列、100,000件制限、学習状態、組み込み8冊を合わせる。UUIDを内部IDに用いるため、Android Roomの数値IDとは相互変換しない。プラットフォーム間の成績移行は学習記録ZIPを用い、内部IDではなく正規CSVで対応付ける。
 
@@ -223,4 +228,4 @@ macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMG
 - Androidのnamespace `com.example` は既存コード由来。applicationIdを変えずに段階的移行する計画が必要
 - AndroidとmacOSの従来JSON形式は共通ではないが、v1.2.0以降は学習記録ZIPを共通形式とする
 - Release署名・macOS Notarizationはローカル検証の範囲外
-- 依存関係の一括更新は回帰範囲が大きいためv1.2.0では行わず、別版で段階的に実施する
+- 依存関係の一括更新は回帰範囲が大きいためv1.2.1では行わず、別版で段階的に実施する

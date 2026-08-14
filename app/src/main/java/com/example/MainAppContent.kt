@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.CsvExporter
 import com.example.data.StudyGroup
+import com.example.domain.StudyLanguage
 import com.example.service.SoundPlayer
 import com.example.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -409,7 +410,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/csv"
                                     putExtra(Intent.EXTRA_STREAM, fileUri)
-                                    val langName = when(activeGroup.language) { "zh" -> "中国語"; "none" -> ""; else -> "英" }
+                                    val langName = StudyLanguage.fromCode(activeGroup.language).displayName
                                     putExtra(Intent.EXTRA_SUBJECT, "${activeGroup.name} の${langName}単語リスト (CSV)")
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
@@ -470,28 +471,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("対象言語:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        FilterChip(
-                            selected = selectedLanguage == "en",
-                            onClick = { selectedLanguage = "en" },
-                            label = { Text("英語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "zh",
-                            onClick = { selectedLanguage = "zh" },
-                            label = { Text("中国語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "none",
-                            onClick = { selectedLanguage = "none" },
-                            label = { Text("なし") }
-                        )
-                    }
+                    LanguageSelector(selectedLanguage) { selectedLanguage = it }
 
                     OutlinedTextField(
                         value = rawText,
@@ -554,28 +534,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("対象言語:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        FilterChip(
-                            selected = selectedLanguage == "en",
-                            onClick = { selectedLanguage = "en" },
-                            label = { Text("英語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "zh",
-                            onClick = { selectedLanguage = "zh" },
-                            label = { Text("中国語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "none",
-                            onClick = { selectedLanguage = "none" },
-                            label = { Text("なし") }
-                        )
-                    }
+                    LanguageSelector(selectedLanguage) { selectedLanguage = it }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -650,28 +609,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("対象言語:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        FilterChip(
-                            selected = editLanguage == "en",
-                            onClick = { editLanguage = "en" },
-                            label = { Text("英語") }
-                        )
-                        FilterChip(
-                            selected = editLanguage == "zh",
-                            onClick = { editLanguage = "zh" },
-                            label = { Text("中国語") }
-                        )
-                        FilterChip(
-                            selected = editLanguage == "none",
-                            onClick = { editLanguage = "none" },
-                            label = { Text("なし") }
-                        )
-                    }
+                    LanguageSelector(editLanguage) { editLanguage = it }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -726,28 +664,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("対象言語:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        FilterChip(
-                            selected = selectedLanguage == "en",
-                            onClick = { selectedLanguage = "en" },
-                            label = { Text("英語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "zh",
-                            onClick = { selectedLanguage = "zh" },
-                            label = { Text("中国語") }
-                        )
-                        FilterChip(
-                            selected = selectedLanguage == "none",
-                            onClick = { selectedLanguage = "none" },
-                            label = { Text("なし") }
-                        )
-                    }
+                    LanguageSelector(selectedLanguage) { selectedLanguage = it }
 
                     Text("連結するCSVを選択してください:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
 
@@ -767,7 +684,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                                         onCheckedChange = { checkedState[gp.id] = it }
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    val langLabel = when(gp.language) { "zh" -> "中国語"; "none" -> "なし"; else -> "英語" }
+                                    val langLabel = StudyLanguage.fromCode(gp.language).displayName
                                     Text("${gp.name} ($langLabel)", fontSize = 14.sp)
                                 }
                             }
@@ -843,7 +760,8 @@ fun MainAppContent(viewModel: MainViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            val ttsLangLabel = when(selectedGroup?.language) { "zh" -> "中国語"; "none" -> "対象言語"; else -> "英語" }
+                            val selectedLanguage = StudyLanguage.fromCode(selectedGroup?.language)
+                            val ttsLangLabel = if (selectedLanguage.code == "none") "対象言語" else selectedLanguage.displayName
                             Text("${ttsLangLabel}の自動読み上げ (TTS)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text("出題テキストが${ttsLangLabel}の時、自動で発音します", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -918,8 +836,8 @@ fun MainAppContent(viewModel: MainViewModel) {
                     HorizontalDivider()
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("一度の学習問題数", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("1回のセッションで出題する最大問題数", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("選択中の単語帳の問題数", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("単語帳ごとに、前回選んだ最大問題数を保存します", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         val counts = listOf(5, 10, 20, 50, MainViewModel.QUIZ_COUNT_ALL)
                         Row(
@@ -962,7 +880,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                             }
                             Button(
                                 onClick = {
-                                    studyArchiveExportLauncher.launch("Tango-pro-study-records-v1.2.0.zip")
+                                    studyArchiveExportLauncher.launch("Tango-pro-study-records-v1.2.1.zip")
                                 },
                                 enabled = !viewModel.isImporting,
                                 modifier = Modifier.weight(1f)
@@ -1078,5 +996,26 @@ fun MainAppContent(viewModel: MainViewModel) {
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LanguageSelector(selectedLanguage: String, onSelected: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("対象言語:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            StudyLanguage.supported.forEach { language ->
+                FilterChip(
+                    selected = selectedLanguage == language.code,
+                    onClick = { onSelected(language.code) },
+                    label = { Text(language.displayName) }
+                )
+            }
+        }
     }
 }

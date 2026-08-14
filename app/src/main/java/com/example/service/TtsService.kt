@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.media.AudioAttributes
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import com.example.domain.StudyLanguage
 import java.util.Locale
 
 class TtsService(context: Context) : TextToSpeech.OnInitListener {
@@ -89,10 +90,15 @@ class TtsService(context: Context) : TextToSpeech.OnInitListener {
     fun speak(text: String, volumeMultiplier: Float = 1.0f, groupLanguage: String = "en") {
         if (isInitialized && tts != null) {
             try {
-                val locale = if (groupLanguage == "zh") Locale.CHINA else Locale.US
+                val language = StudyLanguage.fromCode(groupLanguage)
+                val locale = language.locale ?: return
                 val currentLocale = tts?.voice?.locale
-                if (currentLocale?.language != locale.language) {
-                    tts?.setLanguage(locale)
+                if (currentLocale?.toLanguageTag() != locale.toLanguageTag()) {
+                    val result = tts?.setLanguage(locale)
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.w("TtsService", "TTS language is unavailable: ${language.code} ($locale)")
+                        return
+                    }
                 }
 
                 val params = Bundle().apply {

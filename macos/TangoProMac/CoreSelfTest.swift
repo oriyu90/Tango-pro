@@ -38,7 +38,51 @@ struct CoreSelfTest {
                      "A fully learned book must remain repeatable in recommended mode")
         precondition(repetitionStore.session?.index == 0,
                      "Continue must start a fresh session with the previous settings")
+        repetitionStore.updateStudySettings(for: repetitionStore.selectedGroupID!, settings: GroupStudySettings(
+            directionForward: false, multipleChoice: true, filter: .weak, questionCount: 20
+        ))
+        let secondCSV = repetitionFolder.appendingPathComponent("second.csv")
+        try "bonjour,こんにちは\n".write(to: secondCSV, atomically: true, encoding: .utf8)
+        try repetitionStore.importCSV(url: secondCSV, name: "second", language: "fr")
+        let secondID = repetitionStore.selectedGroupID!
+        repetitionStore.updateStudySettings(for: secondID, settings: GroupStudySettings(
+            directionForward: true, multipleChoice: true, filter: .unstudied, questionCount: 5
+        ))
         repetitionStore.flushPersistence()
+
+        let reopenedRepetitionStore = TangoStore(
+            storageDirectory: repetitionFolder,
+            bundledCSVURL: repetitionFolder.appendingPathComponent("NoCSV")
+        )
+        let firstID = reopenedRepetitionStore.groups.first(where: { $0.name == "repeat" })!.id
+        precondition(reopenedRepetitionStore.studySettings(for: firstID).filter == .weak)
+        precondition(reopenedRepetitionStore.studySettings(for: firstID).questionCount == 20)
+        precondition(reopenedRepetitionStore.studySettings(for: secondID).filter == .unstudied)
+        precondition(reopenedRepetitionStore.studySettings(for: secondID).questionCount == 5,
+                     "Study settings must remain independent for each CSV book")
+        reopenedRepetitionStore.flushPersistence()
+
+        let legacyFolder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TangoLegacySettingsSelfTest-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: legacyFolder, withIntermediateDirectories: true)
+        let legacyGroup = VocabGroup(name: "legacy", words: [VocabWord(term: "old", meaning: "旧")])
+        let legacyGroupObject = try JSONSerialization.jsonObject(with: JSONEncoder().encode(legacyGroup))
+        let legacyState: [String: Any] = [
+            "version": 1,
+            "groups": [legacyGroupObject],
+            "selectedGroupID": legacyGroup.id.uuidString,
+            "darkMode": false,
+            "ttsEnabled": true,
+            "bundledImportCompleted": true
+        ]
+        try JSONSerialization.data(withJSONObject: legacyState)
+            .write(to: legacyFolder.appendingPathComponent("study-data.json"))
+        let legacyStore = TangoStore(storageDirectory: legacyFolder,
+                                     bundledCSVURL: legacyFolder.appendingPathComponent("NoCSV"))
+        precondition(legacyStore.groups.count == 1)
+        precondition(legacyStore.studySettings(for: legacyGroup.id) == GroupStudySettings(),
+                     "v1.2.0 JSON without per-book settings must use defaults")
+        legacyStore.flushPersistence()
 
         let recoveryFolder = FileManager.default.temporaryDirectory
             .appendingPathComponent("TangoCoreSelfTest-\(UUID().uuidString)", isDirectory: true)
@@ -73,6 +117,7 @@ struct CoreSelfTest {
             try? FileManager.default.removeItem(at: bootstrapFolder)
             try? FileManager.default.removeItem(at: archiveFolder)
             try? FileManager.default.removeItem(at: repetitionFolder)
+            try? FileManager.default.removeItem(at: legacyFolder)
         }
         let archiveURL = archiveFolder.appendingPathComponent("round-trip.zip")
         let local = VocabGroup(name: "local", words: [
@@ -89,6 +134,14 @@ struct CoreSelfTest {
         precondition(merged.groups[0].words[0].studyCount == 3)
         precondition(merged.groups[0].words[0].isCorrectLast == false)
 
+        let multilingual = [
+            VocabGroup(name: "français", language: "fr", words: [VocabWord(term: "bonjour", meaning: "こんにちは")]),
+            VocabGroup(name: "português", language: "pt", words: [VocabWord(term: "olá", meaning: "こんにちは")])
+        ]
+        try StudyArchiveCodec.write(groups: multilingual, to: archiveURL, appVersion: "test")
+        let multilingualResult = try StudyArchiveCodec.importAndMerge(groups: [], from: archiveURL)
+        precondition(multilingualResult.groups.map(\.language) == ["fr", "pt"])
+
         let changed = VocabGroup(name: "local", words: [
             VocabWord(term: "apple", meaning: "林檎", studyCount: 1,
                       isCorrectLast: true, lastStudiedAt: Date(timeIntervalSince1970: 300))
@@ -102,22 +155,23 @@ struct CoreSelfTest {
         if let index = arguments.firstIndex(of: "--android-fixture"), index + 1 < arguments.count {
             let androidArchive = URL(fileURLWithPath: arguments[index + 1])
             let crossPlatform = try StudyArchiveCodec.importAndMerge(groups: [], from: androidArchive)
-            precondition(crossPlatform.groups.count == 8)
-            precondition(crossPlatform.summary.addedGroups == 8)
+            precondition(!crossPlatform.groups.isEmpty)
+            precondition(crossPlatform.summary.addedGroups == crossPlatform.groups.count)
             let importFolder = archiveFolder.appendingPathComponent("ImportedStore", isDirectory: true)
             let importedStore = TangoStore(storageDirectory: importFolder,
                                            bundledCSVURL: archiveFolder.appendingPathComponent("NoCSV"))
             let summary = try importedStore.importStudyArchive(from: androidArchive)
-            precondition(summary.addedGroups == 8 && importedStore.groups.count == 8)
+            precondition(summary.addedGroups == crossPlatform.groups.count &&
+                         importedStore.groups.count == crossPlatform.groups.count)
             importedStore.flushPersistence()
             let reopenedImportedStore = TangoStore(storageDirectory: importFolder,
                 bundledCSVURL: archiveFolder.appendingPathComponent("NoCSV"))
-            precondition(reopenedImportedStore.groups.count == 8)
+            precondition(reopenedImportedStore.groups.count == crossPlatform.groups.count)
             reopenedImportedStore.flushPersistence()
         }
         if let index = arguments.firstIndex(of: "--write-fixture"), index + 1 < arguments.count {
             try StudyArchiveCodec.write(groups: [remote, changed],
-                                        to: URL(fileURLWithPath: arguments[index + 1]), appVersion: "1.2.0")
+                                        to: URL(fileURLWithPath: arguments[index + 1]), appVersion: "1.2.1")
         }
         print("TangoCore self-test: PASS")
     }

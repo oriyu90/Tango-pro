@@ -1,6 +1,6 @@
 # 学習記録ZIP形式仕様
 
-Tango pro v1.2.0で導入したAndroid / macOS共通の移行形式である。
+Tango pro v1.2.0で導入し、v1.2.1でフランス語・ポルトガル語metadataへ拡張したAndroid / macOS共通の移行形式である。
 
 ## 識別情報
 
@@ -32,7 +32,7 @@ groups/
   "format": "tango-pro-study-archive",
   "version": 1,
   "exportedAtEpochMillis": 1786439904581,
-  "appVersion": "1.2.0",
+  "appVersion": "1.2.1",
   "groups": [
     {
       "id": "group-0001",
@@ -46,7 +46,7 @@ groups/
 }
 ```
 
-`language` は `en`、`zh`、`none` のいずれか。`exportedAtEpochMillis` はUnix epoch millisecondsである。
+`language` は `en`（英語）、`zh`（中国語）、`fr`（フランス語）、`pt`（ポルトガル語）、`none`（読み上げなし）のいずれか。`exportedAtEpochMillis` はUnix epoch millisecondsである。
 
 ## words.csv
 
@@ -130,3 +130,5 @@ groups/
 ## 互換性方針
 
 version 1のreaderは未知のformat versionを推測して読み込まない。将来フィールドを変更する場合はversionを上げ、旧version readerまたは明示変換を用意する。
+
+v1.2.1は既存の文字列fieldを拡張して `fr` / `pt` を追加した。英語・中国語・読み上げなしだけのZIPはv1.2.0と相互利用できるが、`fr` / `pt` を含むZIPはそれらを認識しないv1.2.0へは読み込めない。両端末をv1.2.1以上へ更新してから移行する。

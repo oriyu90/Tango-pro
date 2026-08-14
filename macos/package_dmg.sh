@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir=${0:A:h}
 project_dir=${script_dir:h}
 app_path="$project_dir/dist-macos/Tango pro.app"
-dmg_path="$project_dir/dist-macos/Tango-pro-1.2.0-universal.dmg"
+dmg_path="$project_dir/dist-macos/Tango-pro-1.2.1-universal.dmg"
 stage_dir=$(mktemp -d /private/tmp/tango-pro-dmg.XXXXXX)
 trap 'rm -rf "$stage_dir"' EXIT
 

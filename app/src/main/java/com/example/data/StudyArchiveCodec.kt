@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.domain.StudyLanguage
 import com.squareup.moshi.Moshi
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -33,7 +34,7 @@ object StudyArchiveCodec {
         var totalBytes = 0L
         val prepared = groups.mapIndexed { index, group ->
             require(group.name.isNotBlank() && group.name.length <= 200) { "単語帳名が不正です。" }
-            require(group.language in setOf("en", "zh", "none")) { "未対応の言語です。" }
+            require(group.language in StudyLanguage.supportedCodes) { "未対応の言語です。" }
             require(group.words.size <= MAX_WORDS_PER_GROUP) { "1冊あたり最大${MAX_WORDS_PER_GROUP}語までです。" }
             validateWordRecords(group.words)
             val id = "group-${(index + 1).toString().padStart(4, '0')}"
@@ -100,7 +101,7 @@ object StudyArchiveCodec {
         val imported = manifest.groups.map { group ->
             require(safeId.matches(group.id) && ids.add(group.id)) { "単語帳IDが不正または重複しています。" }
             require(group.name.isNotBlank() && group.name.length <= 200) { "単語帳名が不正です。" }
-            require(group.language in setOf("en", "zh", "none")) { "未対応の言語です。" }
+            require(group.language in StudyLanguage.supportedCodes) { "未対応の言語です。" }
             require(group.csvPath == "groups/${group.id}/words.csv") { "CSV pathが不正です。" }
             require(group.progressPath == "groups/${group.id}/progress.json") { "学習記録pathが不正です。" }
             require(sha256Pattern.matches(group.csvSha256)) { "CSV hashが不正です。" }

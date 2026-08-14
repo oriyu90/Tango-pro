@@ -18,6 +18,8 @@ import com.example.domain.AnswerNormalizer
 import com.example.domain.BundledGroupCatalog
 import com.example.domain.QuizQuestionFactory
 import com.example.domain.StudyFilterMode
+import com.example.domain.StudyLanguage
+import com.example.domain.StudySettings
 import com.example.service.SoundPlayer
 import com.example.service.TtsService
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +35,7 @@ import java.util.Locale
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
-        const val QUIZ_COUNT_ALL = 100000
+        const val QUIZ_COUNT_ALL = StudySettings.QUIZ_COUNT_ALL
     }
 
     private val database = AppDatabase.getDatabase(application)
@@ -43,6 +45,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val ttsService = TtsService(application)
 
     private val prefs = application.getSharedPreferences("TangoProPrefs", Context.MODE_PRIVATE)
+    private val studySettingsPreferences = StudySettingsPreferences(prefs)
 
     // TTS configurations
     private val _isTtsEnabled = mutableStateOf(prefs.getBoolean("isTtsEnabled", true))
@@ -88,17 +91,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.edit { putString("soundStyle", value.name) }
         }
 
-    private val _selectedQuizCount = mutableStateOf(
-        prefs.getInt("selectedQuizCount", 10)
-            .takeIf { it in setOf(5, 10, 20, 50, QUIZ_COUNT_ALL) }
-            ?: 10
+    private val legacyStudySettings = StudySettings.normalize(
+        StudySettings(
+            directionForward = prefs.getBoolean("studyDirectionForward", true),
+            multipleChoice = prefs.getBoolean("studyMultipleChoice", true),
+            filterMode = prefs.getString("filterMode", StudyFilterMode.RECOMMEND) ?: StudyFilterMode.RECOMMEND,
+            selectedTag = prefs.getString("selectedTagConstraint", "すべて") ?: "すべて",
+            rangeStart = prefs.getInt("rangeStart", 1),
+            rangeEnd = prefs.getInt("rangeEnd", -1),
+            useRangeConstraint = prefs.getBoolean("useRangeConstraint", false),
+            quizCount = prefs.getInt("selectedQuizCount", StudySettings.DEFAULT_QUIZ_COUNT)
+        )
     )
+
+    private val _selectedQuizCount = mutableStateOf(legacyStudySettings.quizCount)
     var selectedQuizCount: Int
         get() = _selectedQuizCount.value
         set(value) {
-            val normalized = value.takeIf { it in setOf(5, 10, 20, 50, QUIZ_COUNT_ALL) } ?: 10
+            val normalized = value.takeIf { it in StudySettings.allowedQuizCounts } ?: StudySettings.DEFAULT_QUIZ_COUNT
             _selectedQuizCount.value = normalized
-            prefs.edit { putInt("selectedQuizCount", normalized) }
+            persistSelectedStudySettings()
         }
 
     private val _darkThemeSelected = mutableStateOf(prefs.getBoolean("darkThemeSelected", false))
@@ -109,68 +121,68 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.edit { putBoolean("darkThemeSelected", value) }
         }
 
-    private val _studyDirectionForward = mutableStateOf(prefs.getBoolean("studyDirectionForward", true))
+    private val _studyDirectionForward = mutableStateOf(legacyStudySettings.directionForward)
     var studyDirectionForward: Boolean
         get() = if (!studyMultipleChoice) false else _studyDirectionForward.value
         set(value) {
             val finalVal = if (!studyMultipleChoice) false else value
             _studyDirectionForward.value = finalVal
-            prefs.edit { putBoolean("studyDirectionForward", finalVal) }
+            persistSelectedStudySettings()
         }
 
-    private val _studyMultipleChoice = mutableStateOf(prefs.getBoolean("studyMultipleChoice", true))
+    private val _studyMultipleChoice = mutableStateOf(legacyStudySettings.multipleChoice)
     var studyMultipleChoice: Boolean
         get() = _studyMultipleChoice.value
         set(value) {
             _studyMultipleChoice.value = value
-            prefs.edit { putBoolean("studyMultipleChoice", value) }
             if (!value) {
-                // If typing, force Japanese -> English direction
-                studyDirectionForward = false
+                // Typing always asks Japanese -> target language.
+                _studyDirectionForward.value = false
             }
+            persistSelectedStudySettings()
         }
 
     private val _filterMode = mutableStateOf(
-        StudyFilterMode.normalize(prefs.getString("filterMode", StudyFilterMode.RECOMMEND))
+        legacyStudySettings.filterMode
     )
     var filterMode: String
         get() = _filterMode.value
         set(value) {
             val normalized = StudyFilterMode.normalize(value)
             _filterMode.value = normalized
-            prefs.edit { putString("filterMode", normalized) }
+            persistSelectedStudySettings()
         }
 
-    private val _selectedTagConstraint = mutableStateOf(prefs.getString("selectedTagConstraint", "すべて") ?: "すべて")
+    private val _selectedTagConstraint = mutableStateOf(legacyStudySettings.selectedTag)
     var selectedTagConstraint: String
         get() = _selectedTagConstraint.value
         set(value) {
-            _selectedTagConstraint.value = value
-            prefs.edit { putString("selectedTagConstraint", value) }
+            _selectedTagConstraint.value = value.ifBlank { "すべて" }
+            persistSelectedStudySettings()
         }
 
-    private val _rangeStart = mutableStateOf(prefs.getInt("rangeStart", 1))
+    private val _rangeStart = mutableStateOf(legacyStudySettings.rangeStart)
     var rangeStart: Int
         get() = _rangeStart.value
         set(value) {
-            _rangeStart.value = value
-            prefs.edit { putInt("rangeStart", value) }
+            _rangeStart.value = value.coerceAtLeast(1)
+            persistSelectedStudySettings()
         }
 
-    private val _rangeEnd = mutableStateOf(prefs.getInt("rangeEnd", -1))
+    private val _rangeEnd = mutableStateOf(legacyStudySettings.rangeEnd)
     var rangeEnd: Int
         get() = _rangeEnd.value
         set(value) {
-            _rangeEnd.value = value
-            prefs.edit { putInt("rangeEnd", value) }
+            _rangeEnd.value = value.takeIf { it == -1 || it >= 1 } ?: -1
+            persistSelectedStudySettings()
         }
 
-    private val _useRangeConstraint = mutableStateOf(prefs.getBoolean("useRangeConstraint", false))
+    private val _useRangeConstraint = mutableStateOf(legacyStudySettings.useRangeConstraint)
     var useRangeConstraint: Boolean
         get() = _useRangeConstraint.value
         set(value) {
             _useRangeConstraint.value = value
-            prefs.edit { putBoolean("useRangeConstraint", value) }
+            persistSelectedStudySettings()
         }
 
     // Active screen selection or group list
@@ -226,10 +238,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun changeSelectedGroup(group: StudyGroup?) {
         _selectedGroup.value = group
         if (group != null) {
+            applyStudySettings(studySettingsPreferences.load(group.id, legacyStudySettings))
             prefs.edit { putLong("lastSelectedGroupId", group.id) }
         } else {
             prefs.edit { remove("lastSelectedGroupId") }
         }
+    }
+
+    private fun currentStudySettings() = StudySettings.normalize(
+        StudySettings(
+            directionForward = _studyDirectionForward.value,
+            multipleChoice = _studyMultipleChoice.value,
+            filterMode = _filterMode.value,
+            selectedTag = _selectedTagConstraint.value,
+            rangeStart = _rangeStart.value,
+            rangeEnd = _rangeEnd.value,
+            useRangeConstraint = _useRangeConstraint.value,
+            quizCount = _selectedQuizCount.value
+        )
+    )
+
+    private fun applyStudySettings(settings: StudySettings) {
+        val normalized = StudySettings.normalize(settings)
+        _studyDirectionForward.value = normalized.directionForward
+        _studyMultipleChoice.value = normalized.multipleChoice
+        _filterMode.value = normalized.filterMode
+        _selectedTagConstraint.value = normalized.selectedTag
+        _rangeStart.value = normalized.rangeStart
+        _rangeEnd.value = normalized.rangeEnd
+        _useRangeConstraint.value = normalized.useRangeConstraint
+        _selectedQuizCount.value = normalized.quizCount
+    }
+
+    private fun persistSelectedStudySettings() {
+        _selectedGroup.value?.id?.let { studySettingsPreferences.save(it, currentStudySettings()) }
     }
 
     init {
@@ -321,7 +363,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val resolvedSortOrder = sortOrder
             ?: ((wordDao.getGroupsDirect().minOfOrNull { it.sortOrder } ?: 1) - 1)
         val groupId = wordDao.insertGroup(
-            StudyGroup(name = name, language = language, sortOrder = resolvedSortOrder)
+            StudyGroup(name = name, language = StudyLanguage.normalize(language), sortOrder = resolvedSortOrder)
         )
         importedWords.chunked(5_000).forEach { chunk ->
             wordDao.insertWords(
@@ -494,7 +536,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 val newGroupId = wordDao.insertGroup(
                                     StudyGroup(
                                         name = nextUniqueName(exportedGroup.name),
-                                        language = exportedGroup.language,
+                                        language = StudyLanguage.normalize(exportedGroup.language),
                                         sortOrder = newSortOrder
                                     )
                                 )
@@ -516,7 +558,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             val newGroupId = wordDao.insertGroup(
                                 StudyGroup(
                                     name = nextUniqueName(exportedGroup.name),
-                                    language = exportedGroup.language,
+                                    language = StudyLanguage.normalize(exportedGroup.language),
                                     sortOrder = newSortOrder
                                 )
                             )
@@ -694,10 +736,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateGroup(group: StudyGroup) {
         viewModelScope.launch(Dispatchers.IO) {
-            wordDao.updateGroup(group)
+            val normalizedGroup = group.copy(language = StudyLanguage.normalize(group.language))
+            wordDao.updateGroup(normalizedGroup)
             if (_selectedGroup.value?.id == group.id) {
                 withContext(Dispatchers.Main) {
-                    changeSelectedGroup(group)
+                    changeSelectedGroup(normalizedGroup)
                 }
             }
         }
@@ -707,6 +750,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteGroupAndWords(groupId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             wordDao.deleteGroupAndWords(groupId)
+            studySettingsPreferences.delete(groupId)
             withContext(Dispatchers.Main) {
                 // Return to first available group, or null
                 val groupsList = wordDao.getGroupsDirect()
@@ -750,7 +794,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val groups = wordDao.getGroupsDirect()
                     val newSortOrder = (groups.minOfOrNull { it.sortOrder } ?: 1) - 1
                     val groupId = wordDao.insertGroup(
-                        StudyGroup(name = finalName, language = language, sortOrder = newSortOrder)
+                        StudyGroup(name = finalName, language = StudyLanguage.normalize(language), sortOrder = newSortOrder)
                     )
                     sourceWords.chunked(5_000).forEach { chunk ->
                         wordDao.insertWords(chunk.map { word ->
@@ -954,16 +998,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         sessionResults = sessionResults + result
 
         // Speak the correct target word upon submission if it wasn't spoken beforehand (e.g. JA -> Target)
-        val lang = _selectedGroup.value?.language ?: "en"
+        val lang = StudyLanguage.normalize(_selectedGroup.value?.language)
         if (isTtsEnabled && lang != "none") {
-            if (lang == "zh") {
-                if (!q.directionForward) {
-                    ttsService.speak(q.correctAnswer, ttsVolume, "zh")
-                }
-            } else {
-                if (!isEnglishString(q.questionText) && isEnglishString(q.correctAnswer)) {
-                    ttsService.speak(q.correctAnswer, ttsVolume, "en")
-                }
+            if (!q.directionForward) {
+                ttsService.speak(q.correctAnswer, ttsVolume, lang)
             }
         }
     }
@@ -997,44 +1035,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val q = currentQuestion ?: return
         if (hasCheckedAnswer) return
 
-        val lang = _selectedGroup.value?.language ?: "en"
+        val lang = StudyLanguage.normalize(_selectedGroup.value?.language)
         if (lang == "none") return
-
-        if (lang == "zh") {
-            if (q.directionForward) {
-                ttsService.speak(q.questionText, ttsVolume, "zh")
-            }
-        } else {
-            if (isEnglishString(q.questionText)) {
-                ttsService.speak(q.questionText, ttsVolume, "en")
-            }
+        if (q.directionForward) {
+            ttsService.speak(q.questionText, ttsVolume, lang)
         }
     }
 
     fun speakCurrentQuestionManual() {
         val q = currentQuestion ?: return
-        val lang = _selectedGroup.value?.language ?: "en"
+        val lang = StudyLanguage.normalize(_selectedGroup.value?.language)
         if (lang == "none") return
-
-        if (lang == "zh") {
-            ttsService.speak(q.word.english, ttsVolume, "zh")
-        } else {
-            if (isEnglishString(q.questionText)) {
-                ttsService.speak(q.questionText, ttsVolume, "en")
-            } else if (isEnglishString(q.correctAnswer)) {
-                ttsService.speak(q.correctAnswer, ttsVolume, "en")
-            } else {
-                ttsService.speak(q.word.english, ttsVolume, "en")
-            }
-        }
-    }
-
-    fun isEnglishString(text: String): Boolean {
-        val trimmed = text.trim()
-        if (trimmed.isEmpty()) return false
-        val hasLetter = trimmed.any { it in 'a'..'z' || it in 'A'..'Z' }
-        val hasJapanese = trimmed.any { it.code in 0x3040..0x309F || it.code in 0x30A0..0x30FF || it.code in 0x4E00..0x9FFF }
-        return hasLetter && !hasJapanese
+        ttsService.speak(q.word.english, ttsVolume, lang)
     }
 
     override fun onCleared() {

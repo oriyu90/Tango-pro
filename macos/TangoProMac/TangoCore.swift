@@ -2,6 +2,36 @@ import AppKit
 import Combine
 import Foundation
 
+enum StudyLanguage: String, CaseIterable, Codable, Identifiable, Sendable {
+    case english = "en"
+    case chinese = "zh"
+    case french = "fr"
+    case portuguese = "pt"
+    case none = "none"
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .english: return "英語"
+        case .chinese: return "中国語"
+        case .french: return "フランス語"
+        case .portuguese: return "ポルトガル語"
+        case .none: return "読み上げなし"
+        }
+    }
+    var preferredLocales: [String] {
+        switch self {
+        case .english: return ["en-US", "en-GB", "en"]
+        case .chinese: return ["zh-CN", "zh-TW", "zh"]
+        case .french: return ["fr-FR", "fr-CA", "fr"]
+        case .portuguese: return ["pt-BR", "pt-PT", "pt"]
+        case .none: return []
+        }
+    }
+
+    static func from(_ code: String) -> StudyLanguage { StudyLanguage(rawValue: code) ?? .english }
+}
+
 struct VocabWord: Codable, Identifiable, Hashable, Sendable {
     var id = UUID()
     var term: String
@@ -17,17 +47,32 @@ struct VocabGroup: Codable, Identifiable, Hashable, Sendable {
     var id = UUID()
     var name: String
     var language: String = "en"
+    var studySettings: GroupStudySettings? = nil
     var createdAt = Date()
     var words: [VocabWord]
 }
 
-enum StudyFilter: String, CaseIterable, Identifiable {
+enum StudyFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     case recommended = "おすすめ"
     case unstudied = "未学習のみ"
     case weak = "うろ覚え＆ミスのみ"
     case vagueRandom = "うろ覚えをランダム"
     case learnedRandom = "学習済をランダム"
     var id: String { rawValue }
+}
+
+struct GroupStudySettings: Codable, Hashable, Sendable {
+    var directionForward = true
+    var multipleChoice = true
+    var filter: StudyFilter = .recommended
+    var questionCount = 10
+
+    var normalized: GroupStudySettings {
+        var result = self
+        if !result.multipleChoice { result.directionForward = false }
+        if ![0, 5, 10, 20, 50].contains(result.questionCount) { result.questionCount = 10 }
+        return result
+    }
 }
 
 struct QuizQuestion: Identifiable {
@@ -248,6 +293,20 @@ final class TangoStore: ObservableObject {
         return groups.first(where: { $0.id == id })
     }
 
+    func studySettings(for groupID: UUID) -> GroupStudySettings {
+        groups.first(where: { $0.id == groupID })?.studySettings?.normalized ?? GroupStudySettings()
+    }
+
+    func updateStudySettings(for groupID: UUID, settings: GroupStudySettings) {
+        guard let index = groups.firstIndex(where: { $0.id == groupID }) else { return }
+        groups[index].studySettings = settings.normalized
+        save()
+    }
+
+    func updateSelectedLanguage(_ language: StudyLanguage) {
+        mutateSelected { group in group.language = language.rawValue }
+    }
+
     func select(_ id: UUID?) {
         selectedGroupID = id
         session = nil
@@ -274,7 +333,7 @@ final class TangoStore: ObservableObject {
 
     func exportStudyArchive(to url: URL) throws {
         flushPersistence()
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.0"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.1"
         try StudyArchiveCodec.write(groups: groups, to: url, appVersion: version)
     }
 
@@ -318,6 +377,12 @@ final class TangoStore: ObservableObject {
 
     func startQuiz(forward: Bool, multipleChoice: Bool, filter: StudyFilter, count: Int) {
         guard let group = selectedGroup else { return }
+        updateStudySettings(for: group.id, settings: GroupStudySettings(
+            directionForward: forward,
+            multipleChoice: multipleChoice,
+            filter: filter,
+            questionCount: count
+        ))
         var candidates = group.words
         switch filter {
         case .recommended:

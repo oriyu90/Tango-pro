@@ -51,7 +51,7 @@ struct ContentView: View {
                 Section("単語帳") {
                     ForEach(store.groups) { group in
                         HStack {
-                            Image(systemName: group.language == "zh" ? "character.book.closed" : "text.book.closed")
+                            Image(systemName: group.language == StudyLanguage.chinese.rawValue ? "character.book.closed" : "text.book.closed")
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(group.name).lineLimit(1)
                                 Text("\(group.words.count)語")
@@ -107,9 +107,23 @@ struct DashboardView: View {
     @State private var showDeleteConfirmation = false
     @State private var showResetConfirmation = false
 
+    init(store: TangoStore, group: VocabGroup) {
+        self.store = store
+        self.group = group
+        let settings = store.studySettings(for: group.id)
+        _forward = State(initialValue: settings.directionForward)
+        _multipleChoice = State(initialValue: settings.multipleChoice)
+        _filter = State(initialValue: settings.filter)
+        _questionCount = State(initialValue: settings.questionCount)
+    }
+
     private var learned: Int { group.words.filter { $0.studyCount >= 2 && $0.isCorrectLast }.count }
     private var vague: Int { group.words.filter { $0.studyCount == 1 && $0.isCorrectLast }.count }
     private var review: Int { group.words.count - learned - vague }
+    private var targetLanguageName: String {
+        let language = StudyLanguage.from(group.language)
+        return language == .none ? "対象言語" : language.displayName
+    }
 
     var body: some View {
         ScrollView {
@@ -117,12 +131,19 @@ struct DashboardView: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(group.name).font(.largeTitle.bold())
-                        Text("\(group.words.count)語・\(group.language == "zh" ? "中国語" : "英語")")
+                        Text("\(group.words.count)語・\(StudyLanguage.from(group.language).displayName)")
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Menu {
                         Button("CSVを書き出す…") { CSVFileActions.exportCSV(from: store) }
+                        Menu("読み上げ言語") {
+                            ForEach(StudyLanguage.allCases) { language in
+                                Button("\(group.language == language.rawValue ? "✓ " : "")\(language.displayName)") {
+                                    store.updateSelectedLanguage(language)
+                                }
+                            }
+                        }
                         Divider()
                         Button("成績をリセット…") { showResetConfirmation = true }
                         Button("単語帳を削除…", role: .destructive) { showDeleteConfirmation = true }
@@ -157,8 +178,8 @@ struct DashboardView: View {
                         GridRow {
                             Text("出題方向").fontWeight(.semibold)
                             Picker("", selection: $forward) {
-                                Text("英語 → 日本語").tag(true)
-                                Text("日本語 → 英語").tag(false)
+                                Text("\(targetLanguageName) → 日本語").tag(true)
+                                Text("日本語 → \(targetLanguageName)").tag(false)
                             }
                             .labelsHidden().pickerStyle(.segmented)
                             .disabled(!multipleChoice)
@@ -170,7 +191,10 @@ struct DashboardView: View {
                                 Text("タイピング").tag(false)
                             }
                             .labelsHidden().pickerStyle(.segmented)
-                            .onChange(of: multipleChoice) { value in if !value { forward = false } }
+                            .onChange(of: multipleChoice) { value in
+                                if !value { forward = false }
+                                persistStudySettings()
+                            }
                         }
                         GridRow {
                             Text("出題対象").fontWeight(.semibold)
@@ -178,6 +202,7 @@ struct DashboardView: View {
                                 ForEach(StudyFilter.allCases) { option in Text(option.rawValue).tag(option) }
                             }
                             .labelsHidden()
+                            .onChange(of: filter) { _ in persistStudySettings() }
                         }
                         GridRow {
                             Text("問題数").fontWeight(.semibold)
@@ -186,6 +211,7 @@ struct DashboardView: View {
                                 Text("50問").tag(50); Text("全問").tag(0)
                             }
                             .labelsHidden().pickerStyle(.segmented)
+                            .onChange(of: questionCount) { _ in persistStudySettings() }
                         }
                     }
                     .padding(.top, 6)
@@ -209,6 +235,16 @@ struct DashboardView: View {
         .confirmationDialog("すべての成績を未学習に戻しますか？", isPresented: $showResetConfirmation) {
             Button("リセット", role: .destructive) { store.resetSelected() }
         }
+        .onChange(of: forward) { _ in persistStudySettings() }
+    }
+
+    private func persistStudySettings() {
+        store.updateStudySettings(for: group.id, settings: GroupStudySettings(
+            directionForward: forward,
+            multipleChoice: multipleChoice,
+            filter: filter,
+            questionCount: questionCount
+        ))
     }
 }
 
@@ -250,7 +286,9 @@ struct QuizView: View {
 
                     Spacer()
                     VStack(spacing: 12) {
-                        Button { speak(question.prompt, language: quiz.language) } label: {
+                        Button {
+                            speak(question.speaksPrompt ? question.prompt : question.answer, language: quiz.language)
+                        } label: {
                             HStack(spacing: 12) {
                                 Text(question.prompt)
                                     .font(.system(size: 38, weight: .bold, design: .rounded))
@@ -309,16 +347,32 @@ struct QuizView: View {
                         if store.ttsEnabled && item.speaksPrompt { speak(item.prompt, language: next.language) }
                     }
                 }
+                .onChange(of: quiz.checked) { checked in
+                    if checked, !quiz.directionForward {
+                        speak(question.answer, language: quiz.language)
+                    }
+                }
             }
         }
     }
 
     private func speak(_ text: String, language: String) {
         speech.stopSpeaking()
-        speech.setVoice(nil)
-        if language == "zh" {
-            speech.setVoice(NSSpeechSynthesizer.VoiceName(rawValue: "com.apple.voice.compact.zh-CN.Tingting"))
-        }
+        let selectedLanguage = StudyLanguage.from(language)
+        guard selectedLanguage != .none else { return }
+        let voice = selectedLanguage.preferredLocales.lazy.compactMap { preferred in
+            NSSpeechSynthesizer.availableVoices.first { voice in
+                guard let locale = NSSpeechSynthesizer.attributes(forVoice: voice)[.localeIdentifier] as? String else {
+                    return false
+                }
+                let normalizedLocale = locale.replacingOccurrences(of: "_", with: "-").lowercased()
+                let normalizedPreferred = preferred.replacingOccurrences(of: "_", with: "-").lowercased()
+                return normalizedLocale == normalizedPreferred ||
+                    (normalizedPreferred.count == 2 && normalizedLocale.hasPrefix("\(normalizedPreferred)-"))
+            }
+        }.first
+        guard let voice else { return }
+        speech.setVoice(voice)
         speech.startSpeaking(text)
     }
 }
@@ -420,7 +474,7 @@ enum StudyArchiveFileActions {
     static func exportArchive(from store: TangoStore) {
         let panel = NSSavePanel()
         panel.title = "学習記録ZIPを書き出す"
-        panel.nameFieldStringValue = "Tango-pro-study-records-v1.2.0.zip"
+        panel.nameFieldStringValue = "Tango-pro-study-records-v1.2.1.zip"
         panel.allowedContentTypes = [.zip]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
@@ -454,7 +508,7 @@ enum CSVFileActions {
 
     static func importCSV(url: URL, into store: TangoStore) {
         let languagePopup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 220, height: 28))
-        languagePopup.addItems(withTitles: ["英語", "中国語", "読み上げなし"])
+        languagePopup.addItems(withTitles: StudyLanguage.allCases.map(\.displayName))
 
         let alert = NSAlert()
         alert.messageText = "CSV単語帳をインポート"
@@ -464,7 +518,7 @@ enum CSVFileActions {
         alert.addButton(withTitle: "キャンセル")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
-        let language = ["en", "zh", "none"][languagePopup.indexOfSelectedItem]
+        let language = StudyLanguage.allCases[languagePopup.indexOfSelectedItem].rawValue
         do {
             try store.importCSV(url: url, language: language)
         } catch {

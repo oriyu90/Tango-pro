@@ -1,11 +1,20 @@
-# Tango pro v1.2.0
+# Tango pro v1.2.1
 
-CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語の読み上げ、学習履歴、単語帳の連結・並べ替え、CSV共有、セーブデータのバックアップに対応します。
+CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定履歴、学習履歴、単語帳の連結・並べ替え、CSV共有、セーブデータのバックアップに対応します。
 
 > [!WARNING]
-> Tango proは試験的なアプリです。v1.2.0で配布するAndroid APKはデバッグ鍵、macOS DMG内のアプリはad-hoc署名です。重要な学習データは、更新や移行の前に設定画面からバックアップしてください。
+> Tango proは試験的なアプリです。v1.2.1で配布するAndroid APKはデバッグ鍵、macOS DMG内のアプリはad-hoc署名です。重要な学習データは、更新や移行の前に設定画面からバックアップしてください。
 
-## v1.2.0の変更点
+## v1.2.1の変更点
+
+- 出題方向、回答形式、出題対象、問題数などの前回設定を単語帳ごとに保存・復元
+- Androidではタグ・範囲指定も単語帳ごとに保持し、旧共通設定を初回に安全に引き継ぎ
+- CSV追加時の言語選択にフランス語・ポルトガル語を追加
+- 追加後も単語帳編集（macOSは単語帳メニュー）から読み上げ言語を変更可能
+- Androidは `fr-FR` / `pt-BR`、macOSはインストール済み音声から対応voiceを選択
+- 学習記録ZIPで `fr` / `pt` の言語metadataをAndroid / macOS間で相互利用可能
+
+## v1.2.0の主な変更点
 
 - 設定画面から、全単語帳CSVと学習記録を1つのZIPへ書き出し・読み込み可能
 - ZIP内に人が直接読める `words.csv` と行ごとの `progress.json` を収録
@@ -20,12 +29,13 @@ CSVで作った単語帳を取り込み、4択またはタイピングで学習�
 - 出題条件を整理し、「うろ覚えをランダム」を追加
 - 単語の文字部分をタップしてもTTS再生可能
 
-詳細は [リリースノート](RELEASE_NOTES_v1.2.0.md)、[学習記録ZIP仕様](docs/STUDY_ARCHIVE_FORMAT.md)、[静的解析レポート](docs/STATIC_ANALYSIS_REPORT_v1.2.0.md) を参照してください。v1.1.2までの安定化修正もこの候補に含まれます。
+詳細は [リリースノート](RELEASE_NOTES_v1.2.1.md)、[学習記録ZIP仕様](docs/STUDY_ARCHIVE_FORMAT.md)、[静的解析レポート](docs/STATIC_ANALYSIS_REPORT_v1.2.1.md) を参照してください。
 
 ## 主な機能
 
 - 組み込み単語帳8冊、またはUTF-8 CSVのファイル／テキスト取り込み
-- 英語・中国語、4択・タイピング、出題方向、タグ・範囲指定
+- 英語・中国語・フランス語・ポルトガル語、4択・タイピング、出題方向、タグ・範囲指定
+- 単語帳ごとの前回出題設定の保存・復元
 - おすすめ／未学習／うろ覚え＆ミス／うろ覚えランダム／学習済ランダムの出題条件
 - TTS読み上げ、音量調整、正誤効果音、ライト／ダークテーマ
 - 習得済み・うろ覚え・未学習／要復習の進捗表示
@@ -71,7 +81,7 @@ UTF-8、LF/CRLF、引用符付きのカンマ・改行・二重引用符に対�
 ./gradlew stageDebugApk
 ```
 
-検証用APKは `dist-android/Tango-pro-1.2.0-android-debug.apk` に生成されます。v1.2.0では、試験的な配布物であることを明示したうえで、このデバッグ署名APKをGitHub Releaseに掲載します。デバッグ鍵が異なる既存インストールには上書きできないため、その場合はバックアップ後に旧版をアンインストールしてください。
+検証用APKは `dist-android/Tango-pro-1.2.1-android-debug.apk` に生成されます。v1.2.1では、試験的な配布物であることを明示したうえで、このデバッグ署名APKをGitHub Releaseに掲載します。デバッグ鍵が異なる既存インストールには上書きできないため、その場合はバックアップ後に旧版をアンインストールしてください。
 
 ## macOSでビルドする
 
@@ -90,10 +100,10 @@ macos/package_dmg.sh
 - [開発・検証手順](docs/DEVELOPMENT.md)
 - [CSV形式仕様](docs/CSV_FORMAT.md)
 - [学習記録ZIP形式仕様](docs/STUDY_ARCHIVE_FORMAT.md)
-- [静的解析レポート](docs/STATIC_ANALYSIS_REPORT_v1.2.0.md)
-- [v1.2.0 リリースノート](RELEASE_NOTES_v1.2.0.md)
+- [静的解析レポート](docs/STATIC_ANALYSIS_REPORT_v1.2.1.md)
+- [v1.2.1 リリースノート](RELEASE_NOTES_v1.2.1.md)
 - [リリースチェックリスト](docs/RELEASE_CHECKLIST.md)
-- [ローカル成果物のSHA-256](CHECKSUMS_v1.2.0.txt)
+- [ローカル成果物のSHA-256](CHECKSUMS_v1.2.1.txt)
 
 ## ライセンス
 

@@ -19,6 +19,18 @@ import java.util.zip.ZipOutputStream
 
 class StudyArchiveCodecTest {
     @Test
+    fun `French and Portuguese language metadata round trips`() {
+        val source = listOf(
+            StudyArchiveExportGroup("français", "fr", listOf(word(0, "bonjour", "こんにちは"))),
+            StudyArchiveExportGroup("português", "pt", listOf(word(0, "olá", "こんにちは")))
+        )
+
+        val imported = StudyArchiveCodec.fromByteArray(StudyArchiveCodec.toByteArray(source))
+
+        assertEquals(listOf("fr", "pt"), imported.map { it.language })
+    }
+
+    @Test
     fun `archive round trip preserves CSV and progress`() {
         val source = listOf(
             StudyArchiveExportGroup(
@@ -93,12 +105,16 @@ class StudyArchiveCodecTest {
     @Test
     fun `producer output can be parsed again`() {
         val valid = StudyArchiveCodec.toByteArray(
-            listOf(StudyArchiveExportGroup("book", "en", listOf(word(0, "apple", "りんご"))))
+            listOf(
+                StudyArchiveExportGroup("book", "en", listOf(word(0, "apple", "りんご"))),
+                StudyArchiveExportGroup("livre français", "fr", listOf(word(0, "bonjour", "こんにちは")))
+            )
         )
         assertTrue(valid.isNotEmpty())
         // Canonical enforcement is covered by parsing an externally formatted archive
         // in the integration fixture tests; this assertion guards the basic producer.
-        assertEquals(1, StudyArchiveCodec.fromByteArray(valid).size)
+        assertEquals(2, StudyArchiveCodec.fromByteArray(valid).size)
+        System.getenv("TANGO_ANDROID_FIXTURE_OUTPUT")?.let { File(it).writeBytes(valid) }
     }
 
     @Test
