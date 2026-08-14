@@ -5,16 +5,19 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WordDao {
-    @Query("SELECT * FROM study_groups ORDER BY createdAt DESC")
+    @Query("SELECT * FROM study_groups ORDER BY sortOrder ASC, createdAt DESC")
     fun getGroups(): Flow<List<StudyGroup>>
+
+    @Query("SELECT * FROM study_groups ORDER BY sortOrder ASC, createdAt DESC")
+    suspend fun getGroupsDirect(): List<StudyGroup>
 
     @Query("SELECT * FROM study_groups WHERE id = :id")
     suspend fun getGroupById(id: Long): StudyGroup?
 
-    @Query("SELECT * FROM words WHERE groupId = :groupId")
+    @Query("SELECT * FROM words WHERE groupId = :groupId ORDER BY id ASC")
     fun getWords(groupId: Long): Flow<List<Word>>
 
-    @Query("SELECT * FROM words WHERE groupId = :groupId")
+    @Query("SELECT * FROM words WHERE groupId = :groupId ORDER BY id ASC")
     suspend fun getWordsDirect(groupId: Long): List<Word>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -27,7 +30,22 @@ interface WordDao {
     suspend fun updateGroup(group: StudyGroup)
 
     @Update
+    suspend fun updateGroups(groups: List<StudyGroup>)
+
+    @Update
     suspend fun updateWord(word: Word)
+
+    @Query(
+        """UPDATE words
+           SET studyCount = studyCount + 1,
+               isCorrectLast = :isCorrect,
+               lastStudiedAt = :studiedAt
+           WHERE id = :wordId"""
+    )
+    suspend fun recordStudyResult(wordId: Long, isCorrect: Boolean, studiedAt: Long): Int
+
+    @Update
+    suspend fun updateWords(words: List<Word>)
 
     @Query("DELETE FROM study_groups WHERE id = :groupId")
     suspend fun deleteGroup(groupId: Long)

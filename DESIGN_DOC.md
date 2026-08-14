@@ -1,296 +1,226 @@
-# Tango pro - 技術物理設計書・開発仕様書 (v1.1.1)
-本ドキュメントは、「Tango pro」モバイルアプリケーションの内部アーキテクチャ、データベース設計、音声・オーディオスレッド制御、各種アルゴリズムを整理した技術設計書です。将来的にPC版（Desktop/Web）への移植を行う際の設計ガイダンスとしても活用できるように詳細に体系化しています。
+# Tango pro v1.2.0 設計書
 
----
+## 1. 目的と対象
 
-## v1.1.1 での変更点（設計への影響）
-* **標準単語帳の同梱・初回自動インポートを追加**: `app/src/main/assets/` に `英語基本単語.csv` / `英語基本フレーズ.csv` / `中国語基本単語.csv` の3ファイルを同梱。`MainViewModel` の `init` ブロックで、初回起動時（`preloadedData` フラグ未設定 かつ 既存グループが0件）に限り `importCsvFromAsset()` を通じて3グループとして自動インポートする（詳細は §5・§6.1）。
-* 既存のRoomスキーマ・インポート/エクスポートのフォーマットには変更を加えず、初回起動時のデータ投入のみを追加した変更である。
+Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv1.2.0候補の実装を正とし、データ構造、責務、失敗時の扱い、互換性を定義する。
 
----
+設計原則は次のとおり。
 
-## v1.1.0 での変更点（設計への影響）
-* **出題フィルタ `recommend`（おすすめモード）を追加**: `filterMode` の分岐に `"recommend"` を新設し、単純な絞り込みではなく「学習状況に応じた重み付き抽選」で出題リストを組み立てる方式に変更（詳細は §3.3）。
-* **CSVエクスポート機能を追加**: グループ単位で単語データをUTF-8 CSVとして書き出す導線を新設。クリップボードコピーと `FileProvider` 経由のファイル共有の2系統を実装（詳細は §6.4）。
-* 上記2機能はいずれも既存のRoomスキーマ（`words` / `study_groups`）に変更を加えず、ViewModel層・UI層のロジック追加のみで実現している。
+- 学習データは端末内で完結し、ネットワークを必須にしない
+- インポートや連結は全件成功または全件失敗とし、部分データを残さない
+- 表示名と物理リソース名を分離し、OSやビルドツールの差を受けにくくする
+- 学習状態の判定を一箇所に集約し、表示と出題条件を一致させる
+- 保存形式にバージョンを持たせ、未知の形式を黙って解釈しない
 
----
+## 2. 対応環境とバージョン
 
-## 1. プロジェクト全体像 & アーキテクチャ概要
+| 項目 | Android | macOS |
+| --- | --- | --- |
+| アプリ版 | 1.2.0 | 1.2.0 |
+| ビルド番号 | 4 | 4 |
+| 最低OS | API 24 | macOS 13 |
+| 対象SDK | API 36 | macOS SDK |
+| UI | Jetpack Compose / Material 3 | SwiftUI |
+| 永続化 | Room SQLite + SharedPreferences | JSONファイル（atomic write） |
 
-本アプリは、Googleが推奨する推奨アプリ構造 (Recommended App Architecture - **MVVMモデル**) を採用し、UIとビジネスロジック、データアクセスを明確に分離しています。
+AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv1.2.0では維持する。
 
-```
-       +---------------------------------------------+
-       |             Jetpack Compose UI              |  (MainActivity.kt)
-       +--------------------+------------------------+
-                            | (State 監視)
-                            | Observer Pattern
-                            v
-       +---------------------------------------------+
-       |              MainViewModel                  |  (MainViewModel.kt)
-       +--------------------+------------------------+
-                            |
-           +----------------+----------------+
-           | (Data Access)                   | (Service Control)
-           v                                 v
-+----------------------+          +----------------------+
-|  Room RoomDatabase   |          | SoundPlayer (自作)   | (SoundPlayer.kt)
-|  & WordDao (SQLite)  |          | TtsService (Android) | (TtsService.kt)
-+----------------------+          +----------------------+
-```
+## 3. Androidアーキテクチャ
 
-### アーキテクチャ構成レイヤー
-1. **コアUIレイヤー (Jetpack Compose / M3)**:
-   単一Activity (`MainActivity.kt`) による Single-Activity 構成。
-   画面のナビゲーションや各コンポーネント（ダッシュボード、設定ダイアログ、クイズ学習セッション画面、CSVインポート画面）は、再利用可能なComposablesにより構築され、画面のライフサイクルや回転などによる状態喪失から保護されています。
-2. **ViewModelレイヤー (MainViewModel.kt)**:
-   `AndroidViewModel`を継承し、アプリ起動からシャットダウンまでのライフサイクルを通じてデータの保持・状態操作・非同期処理を担当。
-   SharedPreferencesへの永続書き込み（セッタープロパティ経由）とRoomのReactive Flows配信を管理。
-3. **データ永続化レイヤー (Room / SQLite)**:
-   `AppDatabase.kt` を中核とし、マルチスレッド環境に対応したトランザクション制御、自動インデックス管理、カスケード削除定義をSQLiteで実現。
-4. **ハードウェア・サービス制御レイヤー**:
-   - `TtsService`: クラウドを介さず端末ローカルのテキスト読上げエンジン（TTS API）を駆動させるバックエンド制御。
-   - `SoundPlayer`: 再生遅延のないピコピコシンセサイザー効果音を、AudioTrackを利用してランタイム上でピュアPCM波形合成して即時再生。
-
----
-
-## 2. データベース・スキーマ設計
-
-データ永続化には SQLite を SQL書き込み不要で抽象化する Jetpack Room 永続ライブラリを使用しています。
-
-### 1) グループテーブル (`study_groups` / Entity: `StudyGroup`)
-CSVから取り込まれた単語帳ごとのメタデータを格納します。
-
-| カラム名 (変数名) | データ型 (SQLite) | 制約 | 説明 |
-| :--- | :--- | :--- | :--- |
-| `id` (`id`) | INTEGER (Long) | PRIMARY KEY, AUTOINCREMENT | 自動生成グループ識別子 |
-| `name` (`name`) | TEXT (String) | NOT NULL | グループの表示名（CSVタイトルなど） |
-| `language` (`language`) | TEXT (String) | NOT NULL, DEFAULT "en" | 対象言語（"en"=英語, "zh"=中国語） |
-| `createdAt` (`createdAt`) | INTEGER (Long) | NOT NULL | グループ作成日時（UNIXミリ秒タイムスタンプ） |
-
-### 2) 単語テーブル (`words` / Entity: `Word`)
-個別単語と、それに対する学習実績データを記録します。
-
-| カラム名 (変数名) | データ型 (SQLite) | 制約 | 説明 |
-| :--- | :--- | :--- | :--- |
-| `id` (`id`) | INTEGER (Long) | PRIMARY KEY, AUTOINCREMENT | 自動生成単語識別子 |
-| `groupId` (`groupId`) | INTEGER (Long) | NOT NULL, **FOREIGN KEY** | 外部キー。`study_groups.id` と紐付け、**On Delete CASCADE**設定 |
-| `english` (`english`) | TEXT (String) | NOT NULL | 出題対象言語の単語 |
-| `japanese` (`japanese`) | TEXT (String) | NOT NULL | 日本語訳 |
-| `tag` (`tag`) | TEXT (String) | NOT NULL (空文字許容) | カテゴリ、品詞分類タグなどのメタデータ |
-| `pronunciation` (`pronunciation`) | TEXT (String) | NOT NULL (空文字許容) | 発音記号や読み方データ |
-| `studyCount` (`studyCount`) | INTEGER (Int) | DEFAULT 0, NOT NULL | 本単語に対する全回答学習回数 |
-| `isCorrectLast` (`isCorrectLast`) | INTEGER (Boolean) | DEFAULT 0, NOT NULL | 前回の解答実績 (1:正解, 0:不正解) |
-| `lastStudiedAt` (`lastStudiedAt`) | INTEGER (Long) | NOT NULL | 最終学習日時（UNIXタイムスタンプミリ秒） |
-
-#### 外部キー定義とカスケード制約の重要性
-```kotlin
-@Entity(
-    tableName = "words",
-    foreignKeys = [
-        ForeignKey(
-            entity = StudyGroup::class,
-            parentColumns = ["id"],
-            childColumns = ["groupId"],
-            onDelete = ForeignKey.CASCADE // グループ削除時に単語リストをデータベースレベルで高速カスケード一括消去
-        )
-    ],
-    indices = [Index(value = ["groupId"])] // パフォーマンス高速化のための検索用インデックス
-)
+```text
+MainActivity
+  └─ MainAppContent
+       ├─ EmptyStateScreen
+       ├─ DashboardScreen
+       ├─ StudySessionScreen
+       └─ QuizSummaryScreen
+            │
+            ▼
+       MainViewModel
+       ├─ domain: 状態判定・回答正規化・問題生成・組み込み台帳
+       ├─ service: TTS・効果音
+       └─ data: Room DAO・CSV・バックアップモデル
 ```
 
----
+### UI層
 
-## 3. 学習進捗ロジック & 学習アルゴリズム
+- `MainActivity.kt`: Activity生成、共有Intent受け取り、テーマ適用のみ
+- `MainAppContent.kt`: 画面遷移、ダイアログ、ファイル選択、共有処理
+- `DashboardScreen.kt`: 進捗と学習条件
+- `StudySessionScreen.kt`: 出題・回答UI
+- `QuizSummaryScreen.kt`: セッション結果
+- `EmptyStateScreen.kt`: 単語帳がない場合の導線
 
-学習結果や習得度を効率よく記憶させるため、3つのステート（未学習・うろ覚え・習得済み）を動的に判定・分類しています。
+### 状態・業務ロジック層
 
-### 1) 3段階習得度ステート定義
-*   `🟢 習得済み (Studied)`:
-    - 判定条件: `studyCount >= 2` かつ `isCorrectLast == true` (直近正解)
-    - 本アプリが定義する「確実に定着した」ステート。
-*   `🟡 うろ覚え (Vague)`:
-    - 判定条件: `studyCount == 1`
-    - 新しいグループから1回答した後の定着率評価期間のステート。
-*   `🔴 未学習/要復習 (Unstudied/Review)`:
-    - 判定条件: `studyCount == 0` (まだ未学習の段階) または、`studyCount > 0` かつ `isCorrectLast == false` (直近で間違えた単語)
-    - 定着率が落ちた、あるいは未着手の単語を表示。
+- `MainViewModel`: RoomとUI状態の調停、インポート、連結、セッション制御
+- `StudyProgress`: 習得状態の唯一の判定元
+- `AnswerNormalizer`: Unicode NFKCと小文字化によるタイピング照合
+- `QuizQuestionFactory`: 4択の重複排除とフォールバック生成
+- `BundledGroupCatalog`: 組み込みCSVの安定ID、物理名、表示名、言語
 
-### 2) 出題フィルタリングロジック (`filterMode`)
-学習者が選んだ条件によって、Room(SQL)でロードされた単語リストをメモリスレッド上で高速判定して絞り込みます。
+### データ層
 
-- **`all` (全問対象)**: グループに属するすべての単語を出題対象とします。
-- **`unstudied` (未学習のみ)**: `studyCount == 0` のみ抽出。
-- **`incorrect` (前回ミスのみ)**: `studyCount > 0` かつ `isCorrectLast == false` のみ抽出。
-- **`learned_once` (うろ覚えのみ)**: `studyCount == 1` のみ抽出。
-- **`weak` (うろ覚え＆ミスのみ)**: `studyCount == 1` または ( `studyCount > 0` かつ `isCorrectLast == false` )。
-- **`learned_random` (学習済からランダム)**: `studyCount > 0` の中から抽出し、シャフル。
-- **`range` (範囲指定・タグ指定)**:
-  - 画面で設定された `rangeStart` から `rangeEnd` までの順位部（1-based index）をシーケンシャルに取り出し。
-  - さらに、`uniqueTags`から選択された品詞タグ（"すべて"以外）に完全一致する単語のみで自動絞り込み。
-- **`recommend` (おすすめ / v1.1.0で追加)**: 単純な条件絞り込みではなく、§3.3 に記載する重み付き抽選アルゴリズムで出題リストを構築する。
+- `AppDatabase`: Room schema version 4、v1→v4の明示Migration
+- `WordDao`: Flowによる購読とsuspend query、原子的な成績更新
+- `CsvParser` / `CsvExporter`: RFC 4180相当の入出力
+- `SaveDataModels`: JSONバックアップ形式version 1
+- `StudyArchiveCodec`: ZIP構造、SHA-256、CSV・進捗対応、展開量の検証
+- `StudyArchiveService`: Room snapshot exportとtransaction import、完全一致判定、統合
 
-### 3) おすすめモードの重み付き抽選アルゴリズム (`filterMode == "recommend"`, v1.1.0)
+## 4. Androidデータモデル
 
-CSVの先頭からの並び順を尊重しつつ、学習進捗ステートに応じて優先的に出題されるよう、単語1件ごとに独立したベルヌーイ試行（乱数判定）を行う方式を採用している（`MainViewModel.kt` 内、セッション生成処理）。
+### study_groups
 
-1. **ステート別の抽選重み（`statusWeight`）を設定**:
-   | 進捗ステート | 判定条件 | 抽選重み |
-   | :--- | :--- | :--- |
-   | 未学習 / 直近ミス | `studyCount == 0` または (`studyCount > 0` かつ `isCorrectLast == false`) | `0.85` |
-   | うろ覚え | `studyCount == 1` | `0.45` |
-   | 習得済み | 上記以外 | `0.15` |
-2. **抽選**: `filtered`（CSV順序を保持した全単語リスト）を先頭から走査し、単語ごとに `Random.nextDouble() < statusWeight` を判定して `selected`（当選）と `remaining`（落選）に振り分ける。この際、他の出題モードと異なり事前シャッフルを行わないため、当選判定の走査順自体がCSVの先頭からの順序になる。
-3. **不足分の補完**: `selected` が要求問題数（`limit`）に満たない場合、`remaining` から先頭順に不足分を補って `limit` 件に到達させる。これにより「進捗が低い単語ほど出やすいが、母数が足りなければ習得済みの単語でも出題される」挙動を保証し、セッションが空になることを防ぐ。
+| 列 | 型 | 説明 |
+| --- | --- | --- |
+| id | Long / PK | 自動採番 |
+| name | String | 表示名 |
+| createdAt | Long | 作成時刻（epoch ms） |
+| language | String | `en` / `zh` / `none` |
+| sortOrder | Int | 昇順表示 |
 
----
+### words
 
-## 4. オーディオエンジン・音響工学設計 (自作高応答シンセ音響)
+| 列 | 型 | 説明 |
+| --- | --- | --- |
+| id | Long / PK | 自動採番 |
+| groupId | Long / indexed | 所属グループID |
+| english | String | 学習対象語。歴史的名称のため中国語でもこの列を使う |
+| japanese | String | 日本語訳 |
+| tag | String | 任意タグ |
+| pronunciation | String | 任意の発音情報 |
+| studyCount | Int | 回答確定回数 |
+| isCorrectLast | Boolean | 直近回答の正誤 |
+| lastStudiedAt | Long | 直近回答時刻（epoch ms） |
 
-アプリの操作性と快感度を高めるため、遅延のある `.wav` などのメディアアセットファイルを読み込む方式を完全に排除し、**「再生遅延ゼロ（理論上最短時間、実測数ミリ秒以内）の自作PCM波形リアルタイム合成再生エンジン」** を搭載しています。
+現スキーマは外部キー制約を宣言していない。グループ削除はDAOの `@Transaction` でwordsを先に削除してからgroupを削除する。将来外部キーを追加する場合はRoom schema versionを上げ、既存孤児データの検査を含むMigrationを用意する。
 
-### 1) 効果音シンセサイザー (`SoundPlayer.kt`)
-Androidの底层オーディオAPIである `AudioTrack` を駆動させ、周波数をその場で配列上に数値計算（サイン波、矩形波など）してダイレクトに送信します。
+## 5. 学習状態と成績更新
 
-- **再生フォーマット仕様**:
-  - サンプリング周波数: `44,100 Hz`
-  - チャンネル: モノラル (`AudioFormat.CHANNEL_OUT_MONO`)
-  - 量子化ビット数: 16bit PCM (`AudioFormat.ENCODING_PCM_16BIT`)
-  - 動作スレッド: `Dispatchers.Default` (UIを絶対にブロッキングさせないバックグラウンド処理)
+| 状態 | 条件 |
+| --- | --- |
+| 習得済み | `studyCount >= 2 && isCorrectLast` |
+| うろ覚え | `studyCount == 1 && isCorrectLast` |
+| 未学習／要復習 | 上記以外 |
 
-#### 周波数からPCM波形を生成する数式
-$$x(t) = \text{Volume} \times A \times \sin(2\pi f t)$$
-- サイン波（ピコピコ好感音用）: $\sin(\theta)$ で合成。
-- 矩形波（重厚ブザー歪み音用）: $\theta$ の正負判定により $+1$ または $-1$ を出力して、低周波に歪みを加えた強烈なノイズ音を再現。
+不正解の初回回答は「うろ覚え」ではなく「要復習」である。Androidは `StudyProgress`、macOSは同じ条件のcomputed logicを使用する。
 
-- **効果音(SE)音量コントロールの実装**:
-  - 音声波形出力の最終段階で、各16Bit振幅サンプル(Short値)に `volumeMultiplier / 音量割合 (0.0f - 1.0f)` を乗算して音量のなめらかなスライド調整を実現。
+回答確定時は、読み出したWordを上書き保存せず次のSQLを実行する。
 
-### 2) テキスト読み上げ (`TtsService.kt`)
-Android組み込みの `TextToSpeech` API をラップし、以下の挙動を担保。
-- **言語設定**: 指定されたグループの対象言語（`Locale.US` または `Locale.CHINA`）に動的切り替え。音声エンジンの準備が整っていない状態での呼び出しを例外キャッチし、インストールを促す。
-- **音量コントロールの実装**:
-  `TextToSpeech.QUEUE_FLUSH` を利用して発声中音声を瞬時にカット＆リフレッシュ、TTS引数クラス `Bundle` に対して `TextToSpeech.Engine.KEY_PARAM_VOLUME` と `volumeMultiplier` を渡すことで音圧コントロールを直接実行。
+```sql
+UPDATE words
+SET studyCount = studyCount + 1,
+    isCorrectLast = :isCorrect,
+    lastStudiedAt = :studiedAt
+WHERE id = :wordId
+```
 
----
+これにより、短時間の連続更新でも古い `studyCount` によるlost updateを防ぐ。
 
-## 5. アプリ設定と永続化 (記憶スキーマ)
+## 6. 出題
 
-「出題学習設定」や「アプリ設定（音量・ダークモード等）」を開閉時・アプリビルド後にも完全に引き継ぐために、ローカルファイルベースの key-value 実装 `SharedPreferences` (ファイル名: `"TangoProPrefs"`) を利用し、ViewModelプロパティの getter/setter を通じて設定完了と同時に高速にデバイスにコミットを行っています。
+出題条件は次の5種類を扱い、初期値は `recommend` とする。
 
-### 永続化保存されるキー一覧
-| SharedPreferences キー名 | デフォルト値 | 変数型 | 説明 |
-| :--- | :--- | :--- | :--- |
-| `lastSelectedGroupId` | 空 / なし | Long | 最後に選択して作業していた単語グループID |
-| `selectedQuizCount` | `10` | Int | セッション問題数 (5問 / 10問 / 20問 / 50問 / 全問) |
-| `darkThemeSelected` | `false` | Boolean | Pure BlackをベースとしたダークテーマのON/OFF |
-| `isTtsEnabled` | `true` | Boolean | 出題時に英語音声を自動発音(TTS)するか |
-| `ttsVolume` | `1.0f` | Float | 英語音声の読み上げ音量 (0% 〜 100%) |
-| `soundStyle` | `"PIKO"` | String | 効果音のスタイル (PIKO / MELODY / BUZZER / MUTE) |
-| `soundVolume` | `1.0f` | Float | 合成音による効果音(SE)の音量 (0% 〜 100%) |
-| `studyDirectionForward` | `true` | Boolean | 出題方向 (true: 英語 ➡️ 日本語, false: 日本語 ➡️ 英語) |
-| `studyMultipleChoice` | `true` | Boolean | 出題形式 (true: 4択クイズ, false: タイピングクイズ) |
-| `filterMode` | `"all"` | String | 出題対象条件 (全問 / 未学習 / ミス / うろ覚え / タグ等) |
-| `selectedTagConstraint` | `"すべて"` | String | 範囲指定選択時に対象となる品詞・タグのテキスト制約 |
-| `rangeStart` | `1` | Int | 範囲指定開始インデックス番号 |
-| `rangeEnd` | `-1` | Int | 範囲指定終了インデックス番号（-1は自動的に全単語数にバインド） |
-| `preloadedData` | `false` | Boolean | 標準単語帳（アセット同梱CSV）の初回自動インポートが完了済みかどうか（v1.1.1で追加、§6.1参照） |
+| ID | 表示 | 候補 |
+| --- | --- | --- |
+| `recommend` | おすすめ | 全語。要復習、うろ覚え、習得済みの順で優先 |
+| `unstudied` | 未学習のみ | `studyCount == 0` |
+| `weak` | うろ覚え＆ミスのみ | うろ覚え、または学習歴があり直近不正解 |
+| `vague_random` | うろ覚えをランダム | うろ覚え |
+| `learned_random` | 学習済をランダム | 習得済み |
 
----
+旧版で保存された `all`、`incorrect`、`learned_once` および未知のIDは、Android起動時に `recommend` へ移行する。タグ・範囲条件は成績条件で候補を絞った後、ランダム化・おすすめ優先順位付けの前に適用する。
 
-## 6. CSV インポートフォーマット仕様
+`recommend` は習得済みも候補から除外しない。そのため全語が習得済みになった後も、3周目、4周目以降を同じ単語帳で繰り返せる。セッション終了時には最後に使用した単語帳、方向、回答形式、条件、問題数、タグ・範囲を保持し、「そのまま続ける」で同じ設定の新規セッションを開始する。
 
-### 1) 標準単語帳の同梱・自動インポート (v1.1.1で追加)
+手動TTSはスピーカーアイコンだけでなく問題語全体を操作領域とする。自動読み上げ設定が無効でも手動再生は利用できる。
 
-初回起動時にユーザーが自分でCSVをインポートしなくても学習を始められるよう、`app/src/main/assets/` に以下の3ファイルを同梱し、アプリの`init`ブロックから自動的にRoomへ取り込む。
+4択問題は正解1件と誤答3件を必要とする。誤答候補は正解文字列を除外し、文字列単位で重複排除する。実データが不足する場合のみ、正解と重ならない表示用フォールバックを追加する。
 
-| ファイル名 | インポート後のグループ名 | `language` |
-| :--- | :--- | :--- |
-| `英語基本単語.csv` | 英語基本単語 | `en` |
-| `英語基本フレーズ.csv` | 英語基本フレーズ | `en` |
-| `中国語基本単語.csv` | 中国語基本単語 | `zh` |
+タイピング回答は前後空白を除去し、Unicode NFKC正規化後に `Locale.ROOT` で小文字化して比較する。このため英字の大文字・小文字と全角・半角の差を許容するが、綴りや単語間空白の差までは許容しない。
 
-- **実行条件**: `MainViewModel.init` 内で `preloadedData`（SharedPreferences）が未設定、かつ既存グループが0件の場合にのみ実行。実行後は成否にかかわらず `preloadedData = true` を書き込み、以後の起動では再実行しない（すでにユーザーが単語帳をインポート済み・または既に初期セットアップ済みの端末でグループが重複生成されるのを防止）。
-- **取り込み処理**: `importCsvFromAsset()` が `context.assets.open(filename)` でストリームを開き、通常のCSVインポートと同一のパース規則（カンマ区切り、`英語,日本語訳,タグ,発音記号`）で1行ずつ読み込む。5,000件ごとにバッチで `wordDao.insertWords()` を実行し、大容量アセットでもメモリを圧迫しないようにしている。
-- **フォールバック**: 例外発生時は `printStackTrace()` してその単語帳のみスキップ（アプリ起動自体はブロックしない）。1件も読み込めなかった場合は作成済みグループを `deleteGroupAndWords()` で削除し、空グループが残らないようにする。
+## 7. CSVと組み込み単語帳
 
-インポート機能では、ユーザーが様々なCSVツールから書き出して取り込めるようにUTF-8文字エンコード基準で厳格に解析・パーシングを行っています。
+CSVの公開仕様は [docs/CSV_FORMAT.md](docs/CSV_FORMAT.md) を参照する。AndroidのパーサーはReaderから逐次処理し、閉じていない引用符や100,000件超過では例外を返す。登録前に全体を解析するため、不正CSVで部分グループを作らない。
 
-- **フォーマット形式**:
-  `"英語単語,日本語訳,カテゴリ・タグ"` （品詞・タグはカンマを介して任意で追加可能。空欄でも動作します）。
-- **データ不適合に対するフォールバック**:
-  - 行が空欄、あるいはカンマがないフォーマット破壊行は警告とともに無視。
-  - 改行コード `CRLF` または `LF` の混在に対応。
-  - Excelなどで書き出したUTF-8のBOM（Byte Order Mark）を取り除くクリーニング処理。
-  - すでに存在する同名称グループへの上書き結合ではなく、インポート毎に新しいユニークグループを作成して既存の統計履歴が汚染されるのを防ぎます。
+組み込みCSVは次の対応を持つ。
 
-### CSVエクスポート機能 (v1.1.0で追加)
+| 安定ID | 物理ファイル名 | 表示名 |
+| --- | --- | --- |
+| basic_phrases | basic_english_phrases.csv | 英語基本フレーズ |
+| basic_words | basic_english_words.csv | 英語基本単語 |
+| basic_chinese | basic_chinese_words.csv | 中国語基本単語 |
+| common_test_words | common_test_words.csv | 共テ用英単語 |
+| common_test_phrases | common_test_phrases.csv | 共テ用英熟語 |
+| advanced_words | advanced_words.csv | 難関大用英単語 |
+| advanced_phrases | advanced_phrases.csv | 難関大用英熟語 |
+| pre_high_school | pre_high_school_vocab.csv | 高校レベル未満の単熟語 |
 
-選択中のグループの単語データを、インポート時と互換性のあるUTF-8 CSV形式で書き出す機能。`MainActivity.kt` の `showExportDialog` から起動し、出力ロジック自体はUIレイヤーに実装されている（Room/ViewModelへの変更なし）。
+Androidは安定IDごとのSharedPreferencesキー、macOSは保存状態の `bundledImportCompleted` で初期投入完了を記録する。完了後にユーザーが削除した組み込み単語帳は再生成しない。旧Android版の初期投入フラグは、既公開の3冊についてのみ互換判定に使用する。
 
-- **出力フォーマット**: `英語,日本語訳,タグ,発音記号` の順で1単語1行。フィールド中の改行・カンマは半角スペースに置換してからCSV文字列を組み立て、フォーマット破壊を防止。
-- **出力経路A: クリップボードコピー**: `ClipboardManager` に `ClipData.newPlainText` としてCSV全文を書き込み、他アプリへの直接貼り付けを可能にする。
-- **出力経路B: ファイル共有**: グループ名から禁則文字（`\/:*?"<>|`）を除去したファイル名（`Tango_pro_<グループ名>.csv`）で `context.cacheDir` 配下に一時ファイルを書き出し、`androidx.core.content.FileProvider`（authority: `<applicationId>.fileprovider`）を通じて `content://` URIを発行。`Intent.ACTION_SEND`（MIME: `text/csv`）でシステム共有シートを起動し、Googleドライブ等の他アプリへの保存・共有を実現する。
+## 8. 複数レコード操作
 
----
+- CSVインポート: 解析完了後、groupとwordsをRoom transactionで登録
+- グループ連結: 対象取得後、新groupと複製wordsをRoom transactionで登録
+- セーブデータ復元: version検証後、全groupをRoom transactionでmergeまたは追加
+- グループ削除: wordsとgroupをDAO transactionで削除
+- 学習記録ZIP import: 全entryを検証後、完全一致groupへのmergeと新規group追加を単一Room transactionで実施
 
-## 7. 将来に向けたPC版（Desktop/Web）移植への技術選定・設計設計
+同名グループのバックアップ復元では、語句集合が完全一致するときだけ学習時刻と回数を比較して新しい成績を採用する。内容が異なる場合は連番付きの別グループとして追加し、既存データを破壊しない。
 
-本アプリは、ピュアな Kotlin 記述と、UI定義を抽象的に扱う Jetpack Compose 宣言型コンポーネントで構築されているため、効率よく移植が可能です。PC向けに開発をスケールするアプローチとして以下の2つの有力なオプションを推奨します。
+## 9. 学習記録ZIP
 
----
+ZIP format identifierは `tango-pro-study-archive`、format versionは1とする。ルートの `manifest.json` が単語帳metadataと各entryのSHA-256を保持し、単語帳ごとに次の2ファイルを置く。
 
-### オプションA: Kotlin Multiplatform Context (KMP / Compose Multiplatform)
-**Androidの実装コード、並びにクラス・ロジック設計をそのままほぼ100％流用してPC版を最速ビルドしたい場合に最も推奨されます。**
+```text
+manifest.json
+groups/group-0001/words.csv
+groups/group-0001/progress.json
+```
 
-*   **開発可能プラットフォーム**: Windows, macOS, Linux (全て同一コードでカバー)
-*   **技術構成**: Kotlin + Jetpack Compose (Desktop向け) + Room KMP + JetBrains KMP
-*   **移植への変更設計**:
-    - **UIレイヤー**: `MainActivity.kt` の Composable群（`MainAppContent` などのレイアウト構造）は、そのままインポートしてデスクトップウインドウ内に配置可能です。
-    - **データレイヤー (Room)**: RoomライブラリはKMPに正式対応しており、`AppDatabase.kt` および `WordDao` はインターフェースを含め完全にそのまま再利用可能です。
-    - **効果音シンセサイザー**: JVM / デスクトップで動かすため、Javaの標準ライブラリである `javax.sound.sampled.SourceDataLine` に対してPCMバイトストリームを作成して書き込む処理に変更します。数式や周波数の計算、量子のロジックはAndroid版をそのまま引き継ぐことができます。
-    - **TTS読み上げ**: 
-      - Windows: SAPI (Speech API) もしくは Java Speech API / OS内蔵の読み上げライブラリをjni/インターフェース呼び出し。
-      - macOS: `Say` プロセスもしくは NSSpeechSynthesizer へテキストをフォーク。
+`words.csv` はアプリ内部の4列をRFC 4180形式、UTF-8、LF、末尾改行ありで正規出力する。「CSV完全一致」はこの正規CSVの文字列一致であり、単語帳名、内部ID、作成日時は判定に含めない。行順、対象語、日本語訳、タグ、発音のいずれかが異なれば別単語帳である。
 
----
+`progress.json` はCSV行番号、学習回数、直近正誤、直近学習時刻（epoch milliseconds）を保持する。CSVのSHA-256と行数が一致しない記録は拒否する。
 
-### オプションB: Webテクノロジースタック (TypeScript + React / Tailwind CSS + Electron)
-**将来的にクラウド同期や、ウェブブラウザ版 (Web App) を含むWeb領域へ進出したい場合。また、Webテクノロジに慣れた開発者が作成する場合に推奨されます。**
+統合規則は次のとおり。
 
-*   **開発可能プラットフォーム**: デスクトップアプリ (Windows/macOS) および 各種ブラウザ、PWA
-*   **技術構成**: TypeScript + React / Webpack + Leaf / Tailwind + Capacitor または Electron (デスクトップラッパー)
-*   **移植への変更設計**:
-    - **UIレイヤー**: Compose のレイアウト（Row, Column, LazyColumn）を、CSSの FlexBox `flex flex-col` や、仮想スクロールリスト（`React Window`等）に置き換えてスタイリング。
-    - **データレイヤー**: ローカルストレージに SQLite（`sql.js` や `SQLite Wasm`）を利用して、Androidと同じリレーショナルスキーマ（`study_groups` と `words`）を保持。
-    - **自作シンセサイザー (SoundPlayer等価物)**:
-      HTML5の機能である **Web Audio API** (`AudioContext`) を使用して、サイン波・矩形波のオシレーターをJavaScript上で駆動させます。
-      ```typescript
-      // Web Audio APIによる等価実装例
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const playPiko = (freq: number, duration: number, volume: number) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine'; // ピコッ音:サイン波
-          osc.frequency.setValueAtTime(freq, ctx.currentTime);
-          gain.gain.setValueAtTime(volume * globalVolumeSetting, ctx.currentTime);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + duration);
-      };
-      ```
-    - **TTS読み上げ**: Webブラウザがネイティブ対応している **Web Speech API** (`SpeechSynthesisUtterance`) を使って一瞬で移植可能です。言語・音量（volume）もプロパティを通じてAndroid同等の精密制御が保証されます。
-      ```typescript
-      const utterance = new SpeechSynthesisUtterance(wordEnglish);
-      utterance.lang = 'en-US';
-      utterance.volume = ttsVolumeSetting; // 0.0 to 1.0 調整可能
-      window.speechSynthesis.speak(utterance);
-      ```
-    - **アプリ設定**: Webのブラウザ領域にある `localStorage` または IndexedDB をキーバリューとして活用し、設定スキーマ（SharedPreferencesとパラメータ完全一致）を格納。
-    - **CSVインポート**: ブラウザに内蔵された `<input type="file">` と JavaScript のパーサー `FileReader` を用いて、テキスト分割 `split(',')` 処理を実行。
+1. 一方のみ `studyCount > 0` なら学習済み側を採用
+2. 双方が学習済みなら大きい `studyCount` を保持
+3. 直近正誤は `lastStudiedAt` が新しい側を採用
+4. 同日時なら `studyCount` が大きい側、完全同値なら端末側を採用
 
----
-本ドキュメントを活用することで、Androidを中核とした「Tango pro」の高い機能性とレスポンスを維持したまま、高い相互運用性を持ったPC/Web版を設計・開発することが可能です。
-**これをもって「Tango pro - 単語学習アプリ (Android)」の仕様をバージョン1.1.1として凍結し、正式に開発完了とします。**
+安全制限は500冊、1冊100,000語、1 entry 64 MiB、総展開量256 MiB、最大1,001 file entryとする。危険path、重複名、未知entry、非UTF-8、symlink、hash不一致、非連続行番号、未知versionを登録前に拒否する。macOSはsystem `zipinfo` でcentral directoryを展開前検査し、`ditto`で一時directoryへ展開する。
+
+完全な形式仕様は [docs/STUDY_ARCHIVE_FORMAT.md](docs/STUDY_ARCHIVE_FORMAT.md) を参照する。
+
+## 10. 設定とバックアップ
+
+AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。音量は0.0〜1.0、問題数は有効範囲に丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
+
+AndroidのJSONセーブデータversion 1はグループ名、言語、語句、タグ、発音、学習回数、直近正誤、直近時刻を含む。UI設定とグループ順は含めない。未知のversionは拒否する。
+
+学習記録ZIPを通常のプラットフォーム間移行形式とする。従来JSONはAndroid旧版との互換用として設定画面に残す。
+
+Android Auto BackupではデータベースとSharedPreferencesを対象とする。端末移行前には明示的なJSON書き出しも推奨する。
+
+## 11. macOS版
+
+macOS版はSwiftUIの `TangoStore` が画面状態と業務処理を保持する。保存先JSONは一時ファイルを介したatomic writeで更新し、専用serial queueで競合を避ける。保存形式version 1以外はエラーとして読み込みを停止する。
+
+AndroidとCSV列、100,000件制限、学習状態、組み込み8冊を合わせる。UUIDを内部IDに用いるため、Android Roomの数値IDとは相互変換しない。プラットフォーム間の成績移行は学習記録ZIPを用い、内部IDではなく正規CSVで対応付ける。
+
+## 12. ビルド、署名、検証
+
+Androidの標準検証は `./gradlew test lint stageDebugApk assembleRelease`。`stageDebugApk` はデバッグ署名APKを `dist-android` に複製する。Release署名は `KEYSTORE_PATH`、`STORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` の環境変数で与え、鍵をリポジトリへ置かない。
+
+macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMGを作る。ローカル候補はad-hoc署名であり、公開時はDeveloper ID署名、Notarization、Gatekeeper確認が必要である。
+
+詳細な手順と公開前チェックは [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) を参照する。
+
+## 13. 既知の保留事項
+
+- Androidのnamespace `com.example` は既存コード由来。applicationIdを変えずに段階的移行する計画が必要
+- AndroidとmacOSの従来JSON形式は共通ではないが、v1.2.0以降は学習記録ZIPを共通形式とする
+- Release署名・macOS Notarizationはローカル検証の範囲外
+- 依存関係の一括更新は回帰範囲が大きいためv1.2.0では行わず、別版で段階的に実施する

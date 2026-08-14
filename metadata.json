@@ -1,6 +1,0 @@
-{
-  "name": "Tango pro",
-  "description": "CSVファイルから単語を読み込み、4択やタイピング形式で楽しく英単語の学習・成績管理ができるアプリです。",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

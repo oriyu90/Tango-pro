@@ -1,25 +1,31 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# IDE and operating-system files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/
+*.iml
+
+# Local Gradle/Android state
+.gradle/
+.kotlin/
+**/build/
 local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local credentials
 .env
-debug.keystore
 *.jks
 *.keystore
-my-upload-key.jks
 
-# ビルド成果物。配布は GitHub Releases で行う
+# Generated distributables
 *.apk
 *.aab
+*.idsig
+*.dmg
+dist/
+dist-android/
+dist-macos/
+
+# Local files retained during the v1.1.2 source cleanup
+.local-archive/
+macos/.stage.*/

@@ -8,5 +8,6 @@ data class StudyGroup(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val createdAt: Long = System.currentTimeMillis(),
-    val language: String = "en"
+    val language: String = "en",
+    val sortOrder: Int = 0
 )

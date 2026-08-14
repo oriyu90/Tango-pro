@@ -3,6 +3,7 @@ package com.example.service
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.sin
@@ -60,6 +61,7 @@ class SoundPlayer {
     }
 
     private suspend fun playTone(frequency: Double, durationSeconds: Double, volume: Double) {
+        var audioTrack: AudioTrack? = null
         try {
             val sampleRate = 16000
             val numSamples = (durationSeconds * sampleRate).toInt()
@@ -74,7 +76,7 @@ class SoundPlayer {
                 generatedSnd[i] = (sample[i] * 32767.0 * volume * envelope).toInt().toShort()
             }
 
-            val audioTrack = AudioTrack.Builder()
+            audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -91,19 +93,18 @@ class SoundPlayer {
                 .setBufferSizeInBytes(numSamples * 2)
                 .setTransferMode(AudioTrack.MODE_STATIC)
                 .build()
-            try {
-                audioTrack.write(generatedSnd, 0, numSamples)
-                audioTrack.play()
-                kotlinx.coroutines.delay((durationSeconds * 1000).toLong() + 100)
-            } finally {
-                audioTrack.release()
-            }
+            audioTrack.write(generatedSnd, 0, numSamples)
+            audioTrack.play()
+            kotlinx.coroutines.delay((durationSeconds * 1000).toLong() + 100)
         } catch (e: Throwable) {
-            e.printStackTrace()
+            Log.w("TangoPro", "Failed to play correct-answer sound", e)
+        } finally {
+            audioTrack?.release()
         }
     }
 
     private suspend fun playSquareTone(frequency: Double, durationSeconds: Double, volume: Double) {
+        var audioTrack: AudioTrack? = null
         try {
             val sampleRate = 16000
             val numSamples = (durationSeconds * sampleRate).toInt()
@@ -118,7 +119,7 @@ class SoundPlayer {
                 generatedSnd[i] = (value * 32767.0 * volume * envelope * 0.15).toInt().toShort()
             }
 
-            val audioTrack = AudioTrack.Builder()
+            audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -135,15 +136,13 @@ class SoundPlayer {
                 .setBufferSizeInBytes(numSamples * 2)
                 .setTransferMode(AudioTrack.MODE_STATIC)
                 .build()
-            try {
-                audioTrack.write(generatedSnd, 0, numSamples)
-                audioTrack.play()
-                kotlinx.coroutines.delay((durationSeconds * 1000).toLong() + 100)
-            } finally {
-                audioTrack.release()
-            }
+            audioTrack.write(generatedSnd, 0, numSamples)
+            audioTrack.play()
+            kotlinx.coroutines.delay((durationSeconds * 1000).toLong() + 100)
         } catch (e: Throwable) {
-            e.printStackTrace()
+            Log.w("TangoPro", "Failed to play incorrect-answer sound", e)
+        } finally {
+            audioTrack?.release()
         }
     }
 }
