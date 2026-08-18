@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://oriyu90.github.io/Tango-pro/sitemap.xml
