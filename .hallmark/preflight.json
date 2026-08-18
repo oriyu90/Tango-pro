@@ -1,0 +1,13 @@
+{
+  "date": "2026-08-18",
+  "framework": "vanilla-html",
+  "font_stack": "Japanese system serif display and system sans body",
+  "palette": "Tango pro black, paper, gold and existing round accents",
+  "motion": "motion-cut",
+  "spacing": "4pt scale",
+  "sources": [
+    "app/src/main/res/drawable-nodpi/gold_book_icon.png",
+    "app/src/main/java/com/example/ui/theme/Theme.kt",
+    "app/src/main/java/com/example/AdaptiveUi.kt"
+  ]
+}

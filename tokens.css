@@ -1,0 +1,64 @@
+/* Hallmark · macrostructure: Long Document · tone: editorial-led · anchor hue: gold */
+:root {
+  --color-ink: oklch(18% 0.018 290);
+  --color-ink-soft: oklch(32% 0.022 290);
+  --color-paper: oklch(97% 0.018 84);
+  --color-paper-deep: oklch(92% 0.027 84);
+  --color-sheet: oklch(99% 0.008 84);
+  --color-gold: oklch(72% 0.12 84);
+  --color-gold-deep: oklch(54% 0.105 78);
+  --color-accent: var(--color-gold);
+  --color-accent-ink: oklch(18% 0.018 290);
+  --color-violet: oklch(55% 0.12 303);
+  --color-violet-soft: oklch(89% 0.035 303);
+  --color-teal: oklch(60% 0.09 185);
+  --color-orange: oklch(69% 0.14 58);
+  --color-purple: oklch(52% 0.15 318);
+  --color-line: oklch(77% 0.025 84);
+  --color-line-dark: oklch(38% 0.025 290);
+  --color-white: oklch(99% 0.008 84);
+  --color-focus: oklch(48% 0.15 303);
+  --color-focus-dark: oklch(86% 0.1 84);
+  --color-danger: oklch(49% 0.16 28);
+  --color-success: oklch(46% 0.105 158);
+  --color-shadow: oklch(18% 0.018 290 / 14%);
+
+  --font-display: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "YuGothic", "Noto Sans JP", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+  --space-5xl: 8rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: clamp(1.75rem, 4vw, 2.75rem);
+  --text-display-s: clamp(2.5rem, 7vw, 3.5rem);
+  --text-display: clamp(3rem, 10vw, 7rem);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-icon: 22%;
+  --radius-round: 999px;
+  --rule-hairline: 1px;
+  --rule-strong: 2px;
+
+  --dur-fast: 110ms;
+  --dur-base: 180ms;
+  --motion-lift: -0.125rem;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}

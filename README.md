@@ -2,6 +2,8 @@
 
 CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定履歴、学習履歴、CSV共有、学習記録ZIPの相互移行に対応します。
 
+[公式紹介サイト](https://oriyu90.github.io/Tango-pro/) · [v2.0.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.0.0)
+
 > [!WARNING]
 > v2.0.0のAndroid APKは既公開版と互換の署名証明書、macOS DMG内のアプリはad-hoc署名・未Notarizeです。更新や移行の前に、設定画面から学習記録ZIPを保存してください。
 
@@ -86,6 +88,7 @@ macos/package_dmg.sh
 - [CSV形式仕様](docs/CSV_FORMAT.md)
 - [学習記録ZIP形式仕様](docs/STUDY_ARCHIVE_FORMAT.md)
 - [v2.0.0 静的解析・テストレポート](docs/STATIC_ANALYSIS_REPORT_v2.0.0.md)
+- [v2.0.0 紹介サイトQA](docs/SITE_QA_v2.0.0.md)
 - [v2.0.0 リリースノート](RELEASE_NOTES_v2.0.0.md)
 - [リリースチェックリスト](docs/RELEASE_CHECKLIST.md)
 - [成果物SHA-256](CHECKSUMS_v2.0.0.txt)

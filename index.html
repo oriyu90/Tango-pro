@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tango pro — CSVで続ける単語帳</title>
+  <meta name="description" content="自分のCSVを取り込み、4択・タイピング・読み上げで学べるAndroid／macOS向け単語帳アプリ。17冊を標準搭載し、学習進捗と周回を端末内に記録します。">
+  <meta name="theme-color" content="#0e0d10">
+  <meta name="author" content="Yuki_Orita">
+  <link rel="canonical" href="https://oriyu90.github.io/Tango-pro/">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="Tango pro">
+  <meta property="og:title" content="Tango pro — CSVで続ける単語帳">
+  <meta property="og:description" content="自分のCSVで、4択・タイピング・読み上げ学習。AndroidとmacOSに対応。">
+  <meta property="og:url" content="https://oriyu90.github.io/Tango-pro/">
+  <meta property="og:image" content="https://oriyu90.github.io/Tango-pro/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="開いた学習ノートと進捗を表す単語カード">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tango pro — CSVで続ける単語帳">
+  <meta name="twitter:description" content="自分のCSVで、4択・タイピング・読み上げ学習。AndroidとmacOSに対応。">
+  <meta name="twitter:image" content="https://oriyu90.github.io/Tango-pro/assets/og.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Tango pro",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Android, macOS",
+    "softwareVersion": "2.0.0",
+    "description": "CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid・macOS向けアプリです。",
+    "url": "https://oriyu90.github.io/Tango-pro/",
+    "downloadUrl": "https://github.com/oriyu90/Tango-pro/releases/tag/v2.0.0",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "author": {
+      "@type": "Person",
+      "name": "Yuki_Orita",
+      "url": "https://oriyu90.github.io/official/"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "JPY"
+    }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="Tango pro トップへ">
+        <img src="assets/favicon.png" width="36" height="36" alt="">
+        <span>Tango pro</span>
+      </a>
+      <nav class="main-nav" aria-label="メインナビゲーション">
+        <a href="#features">できること</a>
+        <a href="#csv">CSV</a>
+        <a class="nav-download" href="#download">ダウンロード</a>
+      </nav>
+      <span class="header-release">v2.0.0</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div>
+            <p class="release-line">Android / macOS · Open source</p>
+            <h1 id="hero-title"><span class="hero-nowrap">自分のCSVが、</span><br>続けられる単語帳になる。</h1>
+            <p class="hero-lead">Tango proは、手元の単語リストを4択・タイピング・読み上げで学べる単語帳アプリです。登録なしで、学習記録は端末の中に保存されます。</p>
+          </div>
+          <div class="hero-actions" role="group" aria-label="ダウンロード">
+            <a class="button" href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-android.apk">Android APK</a>
+            <a class="button button-secondary" href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-universal.dmg">macOS DMG</a>
+          </div>
+        </div>
+        <aside class="hero-aside" aria-label="Tango pro v2.0.0">
+          <img class="hero-icon" src="assets/tango-pro-icon.png" width="768" height="768" alt="金色のページが開くTango proのアプリアイコン">
+          <p class="aside-note">標準17冊。自作CSVは最大10万レコード。進捗は単語帳ごとに積み上がります。</p>
+          <div class="aside-index" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <div class="page-width">
+        <div class="section-heading">
+          <h2 id="features-title">覚えるまでの流れを、ひとつの場所に。</h2>
+          <p>単語帳を用意するところから、出題、復習、次の周回まで。学習方法は細かく選べますが、毎日の画面は必要な情報だけにできます。</p>
+        </div>
+        <dl class="feature-ledger">
+          <div class="feature-row">
+            <span class="feature-number">17 BOOKS</span>
+            <dt>すぐ始められる</dt>
+            <dd>中国語基本単語と、Lv.1〜Lv.8の英単語・英熟語を標準搭載。もちろん、自分のCSVもファイルやテキストから追加できます。</dd>
+          </div>
+          <div class="feature-row">
+            <span class="feature-number">2 MODES</span>
+            <dt>4択とタイピング</dt>
+            <dd>出題方向、タグ、範囲、問題数を単語帳ごとに保存。英語・中国語・フランス語・ポルトガル語の読み上げにも対応します。</dd>
+          </div>
+          <div class="feature-row">
+            <span class="feature-number">4 SIZES</span>
+            <dt>読める文字サイズ</dt>
+            <dd>問題文と4択を、小・標準・大・特大から選択。長い選択肢はボタンの高さが増え、2〜3行でも読み切れます。</dd>
+          </div>
+          <div class="feature-row">
+            <span class="feature-number">∞ ROUNDS</span>
+            <dt>周回が見える</dt>
+            <dd>全単語を一度学ぶと2周目へ。2〜4周目は配色も変わり、5周目以降も周回数をそのまま確認できます。</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="section section-dark" aria-labelledby="simple-title">
+      <div class="page-width mode-spread">
+        <div class="mode-copy">
+          <h2 id="simple-title">集中したい日は、シンプルモード。</h2>
+          <p>「選択中」は残したまま、学習進捗をバーと%だけに整理。出題設定は必要なときだけ開き、学習開始ボタンはいつでも見える位置に置きます。</p>
+          <div class="rounds" role="group" aria-label="周回表示の配色例">
+            <span>1周目</span><span>2周目</span><span>3周目</span><span>4周目</span>
+          </div>
+        </div>
+        <div class="progress-sheet" role="group" aria-label="シンプルモードの表示例">
+          <span class="selected-book">選択中: Lv.4 英単語</span>
+          <div class="progress-wrap">
+            <progress class="progress-line" aria-label="学習進捗" value="68" max="100">68%</progress>
+            <span class="progress-bubble" aria-hidden="true">68%</span>
+          </div>
+          <div class="fold-line"><span>出題設定</span><span aria-hidden="true">開く ＋</span></div>
+          <div class="start-line">学習を開始</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="csv" aria-labelledby="csv-title">
+      <div class="page-width">
+        <div class="csv-layout">
+          <div>
+            <h2 id="csv-title">4列あれば、単語帳になる。</h2>
+            <p>基本は「対象言語、日本語訳、タグ、発音」の順。タグと発音は省略できます。UTF-8、引用符内のカンマや改行にも対応しています。</p>
+            <p><a href="https://github.com/oriyu90/Tango-pro/blob/main/docs/CSV_FORMAT.md">CSV形式を詳しく見る</a></p>
+          </div>
+          <section class="csv-sample" aria-labelledby="csv-example-title">
+            <h3 id="csv-example-title">CSVの例</h3>
+            <pre class="csv-example"><code>apple,りんご,名詞,æpl
+"take care of",世話をする,熟語,
+你好,こんにちは,あいさつ,nǐ hǎo</code></pre>
+          </section>
+        </div>
+        <figure class="study-still">
+          <img src="assets/og.png" width="1200" height="630" alt="開いた学習ノート、進捗表、色分けした単語カード">
+          <figcaption>単語帳は増やせる。進捗は、一冊ずつ積み上げる。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="download" aria-labelledby="download-title">
+      <div class="page-width">
+        <div class="section-heading">
+          <h2 id="download-title">Tango pro v2.0.0</h2>
+          <p>GPL-3.0で公開している無料のオープンソースアプリです。配布ファイルとSHA-256はGitHub Releaseで確認できます。</p>
+        </div>
+        <div class="download-list">
+          <article class="download-row">
+            <h3>Android</h3>
+            <p>既公開版と互換の証明書で署名したAPK。versionCode 6。</p>
+            <a class="button" href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-android.apk">APKを入手</a>
+          </article>
+          <article class="download-row">
+            <h3>macOS</h3>
+            <p>Apple Silicon／Intel対応のuniversal DMG。macOS 13以降。</p>
+            <a class="button" href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-universal.dmg">DMGを入手</a>
+          </article>
+        </div>
+        <p class="release-warning">macOS版はad-hoc署名・未Notarizeです。更新や移行の前に、設定画面から学習記録ZIPを保存してください。</p>
+        <p><a href="https://github.com/oriyu90/Tango-pro/releases/tag/v2.0.0">リリースノートとチェックサムを見る</a></p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="community-title">
+      <div class="page-width project-note">
+        <div>
+          <h2 id="community-title">つくった人と、つながる場所。</h2>
+          <p>開発者はYuki_Orita。バグ報告や更新のお知らせはDiscordへ。開発の記録やほかの制作物はXと公式サイトで案内しています。</p>
+        </div>
+        <nav class="link-columns" aria-label="開発者とコミュニティ">
+          <a href="https://discord.gg/KbTAMnkvQz" target="_blank" rel="noopener noreferrer">Discord</a>
+          <a href="https://x.com/InovateofRIZI" target="_blank" rel="noopener noreferrer">X</a>
+          <a href="https://oriyu90.github.io/official/" target="_blank" rel="noopener noreferrer">公式サイト</a>
+          <a href="https://github.com/oriyu90/Tango-pro" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width footer-inner">
+      <p>© 2026 Yuki Orita · GNU GPL v3.0</p>
+      <a href="https://github.com/oriyu90/Tango-pro/blob/main/NOTICE.md">第三者ライブラリ情報</a>
+    </div>
+  </footer>
+</body>
+</html>
