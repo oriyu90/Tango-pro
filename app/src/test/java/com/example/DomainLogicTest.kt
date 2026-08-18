@@ -8,6 +8,7 @@ import com.example.domain.QuizQuestionFactory
 import com.example.domain.StudyFilterMode
 import com.example.domain.StudyLanguage
 import com.example.domain.StudyProgress
+import com.example.domain.StudyRound
 import com.example.domain.StudySettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -15,6 +16,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DomainLogicTest {
+    @Test
+    fun `study round advances only after every word completes the lap`() {
+        assertEquals(1, StudyRound.current(emptyList()))
+        assertEquals(1, StudyRound.current(listOf(word(1, studyCount = 1), word(2, studyCount = 0))))
+        assertEquals(2, StudyRound.current(listOf(word(1, studyCount = 1), word(2, studyCount = 1))))
+        assertEquals(4, StudyRound.current(listOf(word(1, studyCount = 3), word(2, studyCount = 5))))
+        assertEquals(5, StudyRound.current(listOf(word(1, studyCount = 4), word(2, studyCount = 4))))
+        assertEquals(0, StudyRound.visualTier(5))
+    }
+
     @Test
     fun `French and Portuguese are supported TTS languages`() {
         assertEquals("fr-FR", StudyLanguage.fromCode("fr").locale?.toLanguageTag())

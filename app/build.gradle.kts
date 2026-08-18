@@ -5,7 +5,7 @@ plugins {
   alias(libs.plugins.roborazzi)
 }
 
-val appVersionName = "1.2.1"
+val appVersionName = "2.0.0"
 
 android {
   namespace = "com.example"
@@ -15,7 +15,7 @@ android {
     applicationId = "com.aistudio.vocabstudier.xwqnzy"
     minSdk = 24
     targetSdk = 36
-    versionCode = 5
+    versionCode = 6
     versionName = appVersionName
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -96,4 +96,11 @@ tasks.register<Copy>("stageDebugApk") {
   from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
   into(layout.projectDirectory.dir("../dist-android"))
   rename("app-debug.apk", "Tango-pro-$appVersionName-android-debug.apk")
+}
+
+tasks.register<Copy>("stageReleaseApk") {
+  dependsOn("assembleRelease")
+  from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
+  into(layout.projectDirectory.dir("../dist-android"))
+  rename("app-release.apk", "Tango-pro-$appVersionName-android.apk")
 }

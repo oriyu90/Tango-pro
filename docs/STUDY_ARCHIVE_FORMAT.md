@@ -1,6 +1,6 @@
 # 学習記録ZIP形式仕様
 
-Tango pro v1.2.0で導入し、v1.2.1でフランス語・ポルトガル語metadataへ拡張したAndroid / macOS共通の移行形式である。
+Tango pro v1.2.0で導入し、v1.2.1でフランス語・ポルトガル語metadataへ拡張したAndroid / macOS共通の移行形式である。v2.0.0でもformat version 1を維持する。
 
 ## 識別情報
 
@@ -32,7 +32,7 @@ groups/
   "format": "tango-pro-study-archive",
   "version": 1,
   "exportedAtEpochMillis": 1786439904581,
-  "appVersion": "1.2.1",
+  "appVersion": "2.0.0",
   "groups": [
     {
       "id": "group-0001",

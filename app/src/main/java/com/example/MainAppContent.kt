@@ -7,6 +7,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -34,11 +36,12 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.CsvExporter
 import com.example.data.StudyGroup
 import com.example.domain.StudyLanguage
+import com.example.domain.StudyRound
 import com.example.service.SoundPlayer
 import com.example.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MainAppContent(viewModel: MainViewModel) {
     val context = LocalContext.current
@@ -46,6 +49,7 @@ fun MainAppContent(viewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     val groups by viewModel.groups.collectAsState(initial = emptyList())
+    val groupRounds by viewModel.groupRounds.collectAsState(initial = emptyMap())
     val selectedGroup by viewModel.selectedGroup.collectAsState()
     val words by viewModel.selectedGroupWords.collectAsState()
 
@@ -130,7 +134,7 @@ fun MainAppContent(viewModel: MainViewModel) {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(310.dp)
+                modifier = Modifier.fillMaxWidth(0.9f).widthIn(max = 360.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -180,6 +184,12 @@ fun MainAppContent(viewModel: MainViewModel) {
                         ) {
                             items(groups) { group ->
                                 val isSelected = selectedGroup?.id == group.id
+                                val round = groupRounds[group.id] ?: 1
+                                val roundTint = if (StudyRound.visualTier(round) in 2..4) {
+                                    roundAccentColor(round).copy(alpha = if (isSelected) 0.18f else 0.1f)
+                                } else {
+                                    Color.Transparent
+                                }
                                 var dragOffset by remember { mutableStateOf(0f) }
                                 NavigationDrawerItem(
                                     icon = {
@@ -205,11 +215,14 @@ fun MainAppContent(viewModel: MainViewModel) {
                                         )
                                     },
                                     label = {
-                                        Text(
-                                            text = group.name,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            maxLines = 1
-                                        )
+                                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                            AdaptiveSingleLineText(
+                                                text = group.name,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                            RoundBadge(round)
+                                        }
                                     },
                                     selected = isSelected,
                                     onClick = {
@@ -230,7 +243,9 @@ fun MainAppContent(viewModel: MainViewModel) {
                                             )
                                         }
                                     },
-                                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(roundTint)
                                 )
                             }
                         }
@@ -721,7 +736,11 @@ fun MainAppContent(viewModel: MainViewModel) {
         Dialog(onDismissRequest = { showSettingsDialog = false }) {
             Card(
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().padding(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+                    .widthIn(max = 720.dp)
+                    .padding(12.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp)
@@ -751,6 +770,58 @@ fun MainAppContent(viewModel: MainViewModel) {
                                 modifier = Modifier.testTag("dark_theme_switch")
                             )
                         }
+
+                    HorizontalDivider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("シンプルモード", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "進捗と出題設定をすっきり表示し、文字を少し大きくします",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = viewModel.simpleModeEnabled,
+                            onCheckedChange = { viewModel.simpleModeEnabled = it },
+                            modifier = Modifier.testTag("simple_mode_switch")
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("問題・4択の文字サイズ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(
+                            "問題文と4択の文字を同時に変更します。長い選択肢は複数行で表示されます。",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val sizes = listOf(
+                                0.8f to "小",
+                                1f to "標準",
+                                1.2f to "大",
+                                1.4f to "特大"
+                            )
+                            sizes.forEach { (scale, label) ->
+                                FilterChip(
+                                    selected = viewModel.quizTextScale == scale,
+                                    onClick = { viewModel.quizTextScale = scale },
+                                    label = { Text(label, fontWeight = FontWeight.Bold) },
+                                    modifier = Modifier.testTag("quiz_text_scale_$label")
+                                )
+                            }
+                        }
+                    }
 
                     HorizontalDivider()
 
@@ -880,7 +951,7 @@ fun MainAppContent(viewModel: MainViewModel) {
                             }
                             Button(
                                 onClick = {
-                                    studyArchiveExportLauncher.launch("Tango-pro-study-records-v1.2.1.zip")
+                                    studyArchiveExportLauncher.launch("Tango-pro-study-records-v2.0.0.zip")
                                 },
                                 enabled = !viewModel.isImporting,
                                 modifier = Modifier.weight(1f)

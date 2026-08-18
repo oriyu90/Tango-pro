@@ -1,6 +1,6 @@
 # CSV形式仕様
 
-Tango pro v1.2.1のAndroid版とmacOS版で共通に扱う単語帳形式です。
+Tango pro v2.0.0のAndroid版とmacOS版で共通に扱う単語帳形式です。
 
 ## 文字コードと行
 

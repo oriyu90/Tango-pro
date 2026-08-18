@@ -36,6 +36,7 @@ import java.util.Locale
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val QUIZ_COUNT_ALL = StudySettings.QUIZ_COUNT_ALL
+        val QUIZ_TEXT_SCALES = listOf(0.8f, 1f, 1.2f, 1.4f)
     }
 
     private val database = AppDatabase.getDatabase(application)
@@ -121,6 +122,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             prefs.edit { putBoolean("darkThemeSelected", value) }
         }
 
+    private val _simpleModeEnabled = mutableStateOf(prefs.getBoolean("simpleModeEnabled", false))
+    var simpleModeEnabled: Boolean
+        get() = _simpleModeEnabled.value
+        set(value) {
+            _simpleModeEnabled.value = value
+            prefs.edit { putBoolean("simpleModeEnabled", value) }
+        }
+
+    private val _quizTextScale = mutableStateOf(
+        normalizeQuizTextScale(prefs.getFloat("quizTextScale", 1f))
+    )
+    var quizTextScale: Float
+        get() = _quizTextScale.value
+        set(value) {
+            val normalized = normalizeQuizTextScale(value)
+            _quizTextScale.value = normalized
+            prefs.edit { putFloat("quizTextScale", normalized) }
+        }
+
+    private fun normalizeQuizTextScale(value: Float): Float =
+        QUIZ_TEXT_SCALES.minBy { kotlin.math.abs(it - value) }
+
     private val _studyDirectionForward = mutableStateOf(legacyStudySettings.directionForward)
     var studyDirectionForward: Boolean
         get() = if (!studyMultipleChoice) false else _studyDirectionForward.value
@@ -187,6 +210,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Active screen selection or group list
     val groups: Flow<List<StudyGroup>> = wordDao.getGroups()
+    val groupRounds: Flow<Map<Long, Int>> = wordDao.getGroupRoundProgress().map { rows ->
+        rows.associate { it.groupId to (it.minimumStudyCount.coerceAtLeast(0) + 1) }
+    }
 
     private val _selectedGroup = MutableStateFlow<StudyGroup?>(null)
     val selectedGroup: StateFlow<StudyGroup?> = _selectedGroup.asStateFlow()

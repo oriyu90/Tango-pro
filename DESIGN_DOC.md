@@ -1,8 +1,8 @@
-# Tango pro v1.2.1 設計書
+# Tango pro v2.0.0 設計書
 
 ## 1. 目的と対象
 
-Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv1.2.1の実装を正とし、データ構造、責務、失敗時の扱い、互換性を定義する。
+Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv2.0.0の実装を正とし、データ構造、責務、レスポンシブ表示、失敗時の扱い、互換性を定義する。
 
 設計原則は次のとおり。
 
@@ -16,14 +16,14 @@ Tango proは、CSV単語帳を取り込んで反復学習するローカルフ�
 
 | 項目 | Android | macOS |
 | --- | --- | --- |
-| アプリ版 | 1.2.1 | 1.2.1 |
-| ビルド番号 | 5 | 5 |
+| アプリ版 | 2.0.0 | 2.0.0 |
+| ビルド番号 | 6 | 6 |
 | 最低OS | API 24 | macOS 13 |
 | 対象SDK | API 36 | macOS SDK |
 | UI | Jetpack Compose / Material 3 | SwiftUI |
 | 永続化 | Room SQLite + SharedPreferences | JSONファイル（atomic write） |
 
-AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv1.2.1では維持する。
+AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv2.0.0では維持する。
 
 ## 3. Androidアーキテクチャ
 
@@ -48,6 +48,7 @@ MainActivity
 - `MainAppContent.kt`: 画面遷移、ダイアログ、ファイル選択、共有処理
 - `DashboardScreen.kt`: 進捗と学習条件
 - `StudySessionScreen.kt`: 出題・回答UI
+- `AdaptiveUi.kt`: 長い1行名の80%縮小・省略、周回バッジの共通表示
 - `QuizSummaryScreen.kt`: セッション結果
 - `EmptyStateScreen.kt`: 単語帳がない場合の導線
 
@@ -55,6 +56,7 @@ MainActivity
 
 - `MainViewModel`: RoomとUI状態の調停、インポート、連結、セッション制御
 - `StudyProgress`: 習得状態の唯一の判定元
+- `StudyRound`: 全語の最小学習回数から現在周回を算出
 - `AnswerNormalizer`: Unicode NFKCと小文字化によるタイピング照合
 - `QuizQuestionFactory`: 4択の重複排除とフォールバック生成
 - `BundledGroupCatalog`: 組み込みCSVの安定ID、物理名、表示名、言語
@@ -121,6 +123,12 @@ WHERE id = :wordId
 
 これにより、短時間の連続更新でも古い `studyCount` によるlost updateを防ぐ。
 
+### 周回
+
+周回は習得状態と独立し、空でない単語帳について `min(words.studyCount) + 1` とする。空の単語帳は1周目である。全語の回答確定回数が1以上になった時点で2周目となるため、一部の語だけを繰り返しても周回は進まない。
+
+1周目は通常表示、2〜4周目はプラットフォーム共通のティール／オレンジ／パープル系アクセントを用いる。5周目以降は過度な装飾増加を避け、通常配色の `x周目` ラベルだけを表示する。
+
 ## 6. 出題
 
 出題条件は次の5種類を扱い、初期値は `recommend` とする。
@@ -143,6 +151,8 @@ WHERE id = :wordId
 
 4択問題は正解1件と誤答3件を必要とする。誤答候補は正解文字列を除外し、文字列単位で重複排除する。実データが不足する場合のみ、正解と重ならない表示用フォールバックを追加する。
 
+問題文と4択の文字倍率は `0.8 / 1.0 / 1.2 / 1.4` の4値へ正規化する。4択は固定高を持たず最小高だけを定義し、最大3行と上下paddingから必要な高さを決める。
+
 タイピング回答は前後空白を除去し、Unicode NFKC正規化後に `Locale.ROOT` で小文字化して比較する。このため英字の大文字・小文字と全角・半角の差を許容するが、綴りや単語間空白の差までは許容しない。
 
 ## 7. CSVと組み込み単語帳
@@ -153,16 +163,25 @@ CSVの公開仕様は [docs/CSV_FORMAT.md](docs/CSV_FORMAT.md) を参照する�
 
 | 安定ID | 物理ファイル名 | 表示名 |
 | --- | --- | --- |
-| basic_phrases | basic_english_phrases.csv | 英語基本フレーズ |
-| basic_words | basic_english_words.csv | 英語基本単語 |
 | basic_chinese | basic_chinese_words.csv | 中国語基本単語 |
-| common_test_words | common_test_words.csv | 共テ用英単語 |
-| common_test_phrases | common_test_phrases.csv | 共テ用英熟語 |
-| advanced_words | advanced_words.csv | 難関大用英単語 |
-| advanced_phrases | advanced_phrases.csv | 難関大用英熟語 |
-| pre_high_school | pre_high_school_vocab.csv | 高校レベル未満の単熟語 |
+| v2_lv1_intro_words | lv1_intro_words.csv | Lv.1中学入門英単語 |
+| v2_lv1_intro_phrases | lv1_intro_phrases.csv | Lv.1中学入門英熟語 |
+| v2_lv2_junior_beginner_words | lv2_junior_beginner_words.csv | Lv.2中学初級英単語 |
+| v2_lv2_junior_beginner_phrases | lv2_junior_beginner_phrases.csv | Lv.2中学初級英熟語 |
+| v2_lv3_junior_intermediate_words | lv3_junior_intermediate_words.csv | Lv.3中学中級英単語 |
+| v2_lv3_junior_intermediate_phrases | lv3_junior_intermediate_phrases.csv | Lv.3中学中級英熟語 |
+| v2_lv4_high_intro_words | lv4_high_intro_words.csv | Lv.4高校入門英単語 |
+| v2_lv4_high_intro_phrases | lv4_high_intro_phrases.csv | Lv.4高校入門英熟語 |
+| v2_lv5_high_beginner_words | lv5_high_beginner_words.csv | Lv.5高校初級英単語 |
+| v2_lv5_high_beginner_phrases | lv5_high_beginner_phrases.csv | Lv.5高校初級英熟語 |
+| v2_lv6_high_intermediate_words | lv6_high_intermediate_words.csv | Lv.6高校中級英単語 |
+| v2_lv6_high_intermediate_phrases | lv6_high_intermediate_phrases.csv | Lv.6高校中級英熟語 |
+| v2_lv7_high_advanced_words | lv7_high_advanced_words.csv | Lv.7高校上級英単語 |
+| v2_lv7_high_advanced_phrases | lv7_high_advanced_phrases.csv | Lv.7高校上級英熟語 |
+| v2_lv8_expert_words | lv8_expert_words.csv | Lv.8発展英単語 |
+| v2_lv8_expert_phrases | lv8_expert_phrases.csv | Lv.8発展英熟語 |
 
-Androidは安定IDごとのSharedPreferencesキー、macOSは保存状態の `bundledImportCompleted` で初期投入完了を記録する。完了後にユーザーが削除した組み込み単語帳は再生成しない。旧Android版の初期投入フラグは、既公開の3冊についてのみ互換判定に使用する。
+Androidは安定IDごとのSharedPreferencesキーで冊子単位の投入完了を記録する。macOSは `bundledCatalogVersion = 2` を保存し、旧 `bundledImportCompleted` は世代1として解釈する。v2移行では既存単語帳を削除せず、新しい表示名が未登録の標準冊子だけを追加する。世代2の完了後にユーザーが削除した標準単語帳は再生成しない。
 
 ## 8. 複数レコード操作
 
@@ -201,7 +220,11 @@ groups/group-0001/progress.json
 
 ## 10. 設定とバックアップ
 
-AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。テーマ・TTS・音量・効果音はアプリ共通、出題設定は単語帳ID別である。音量は0.0〜1.0、問題数は有効範囲に丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
+AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。テーマ・TTS・音量・効果音・シンプルモード・問題文字倍率はアプリ共通、出題設定は単語帳ID別である。音量は0.0〜1.0、問題数と文字倍率は有効候補へ丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
+
+シンプルモードでも選択中カードと学習開始ボタンは常時表示する。進捗は1回以上学習した語の割合をバーと%吹き出しで表し、出題設定は初期状態を閉じたDisclosure表示とする。通常モードは従来の3状態別件数・割合を維持する。
+
+Androidダッシュボードは680dp未満を狭幅として折返しを優先し、本文最大幅を1,000dpに制限する。学習画面は幅720dp以上かつ横長の場合に問題／回答の2ペイン、それ以外は縦積みスクロールとする。
 
 AndroidのJSONセーブデータversion 1はグループ名、言語、語句、タグ、発音、学習回数、直近正誤、直近時刻を含む。UI設定とグループ順は含めない。未知のversionは拒否する。
 
@@ -213,11 +236,13 @@ Android Auto BackupではデータベースとSharedPreferencesを対象とす�
 
 macOS版はSwiftUIの `TangoStore` が画面状態と業務処理を保持する。保存先JSONは一時ファイルを介したatomic writeで更新し、専用serial queueで競合を避ける。保存形式version 1以外はエラーとして読み込みを停止する。単語帳ごとの `studySettings` はoptionalとして追加し、v1.2.0以前のJSONを形式version変更なしで読み込める。
 
-AndroidとCSV列、100,000件制限、学習状態、組み込み8冊を合わせる。UUIDを内部IDに用いるため、Android Roomの数値IDとは相互変換しない。プラットフォーム間の成績移行は学習記録ZIPを用い、内部IDではなく正規CSVで対応付ける。
+AndroidとCSV列、100,000件制限、学習状態、周回算出、組み込み17冊を合わせる。UUIDを内部IDに用いるため、Android Roomの数値IDとは相互変換しない。プラットフォーム間の成績移行は学習記録ZIPを用い、内部IDではなく正規CSVで対応付ける。
+
+macOSの最小ウィンドウは680×500とし、ダッシュボードは縦積みScrollView、4択は利用幅620pt未満で1列、以上で2列とする。長い単語帳名は `ViewThatFits` で通常サイズ、80%サイズ＋末尾省略の順に評価する。
 
 ## 12. ビルド、署名、検証
 
-Androidの標準検証は `./gradlew test lint stageDebugApk assembleRelease`。`stageDebugApk` はデバッグ署名APKを `dist-android` に複製する。Release署名は `KEYSTORE_PATH`、`STORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` の環境変数で与え、鍵をリポジトリへ置かない。
+Androidの標準検証は `./gradlew test lint stageReleaseApk`。`stageReleaseApk` は署名済みrelease APKを `dist-android` に複製する。Release署名は `KEYSTORE_PATH`、`STORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` の環境変数で与え、鍵やパスワードをリポジトリへ置かない。
 
 macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMGを作る。ローカル候補はad-hoc署名であり、公開時はDeveloper ID署名、Notarization、Gatekeeper確認が必要である。
 
@@ -228,4 +253,4 @@ macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMG
 - Androidのnamespace `com.example` は既存コード由来。applicationIdを変えずに段階的移行する計画が必要
 - AndroidとmacOSの従来JSON形式は共通ではないが、v1.2.0以降は学習記録ZIPを共通形式とする
 - Release署名・macOS Notarizationはローカル検証の範囲外
-- 依存関係の一括更新は回帰範囲が大きいためv1.2.1では行わず、別版で段階的に実施する
+- 依存関係の一括更新は回帰範囲が大きいためv2.0.0では行わず、別版で段階的に実施する

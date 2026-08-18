@@ -19,7 +19,7 @@ struct TangoProApp: App {
     var body: some Scene {
         WindowGroup("Tango pro") {
             ContentView(store: store)
-                .frame(minWidth: 920, minHeight: 620)
+                .frame(minWidth: 680, minHeight: 500)
                 .preferredColorScheme(store.darkMode ? .dark : .light)
                 .onAppear { appDelegate.store = store }
                 .onOpenURL { url in CSVFileActions.importCSV(url: url, into: store) }
@@ -33,7 +33,49 @@ struct TangoProApp: App {
         }
         Settings {
             PreferencesView(store: store)
-                .frame(width: 500, height: 330)
+                .frame(width: 520, height: 460)
+        }
+    }
+}
+
+struct AdaptiveBookName: View {
+    let text: String
+    let size: CGFloat
+    let weight: Font.Weight
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            Text(text)
+                .font(.system(size: size, weight: weight))
+                .fixedSize(horizontal: true, vertical: false)
+            Text(text)
+                .font(.system(size: size * 0.8, weight: weight))
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+    }
+}
+
+private func roundAccent(_ round: Int) -> Color {
+    switch round {
+    case 2: return .teal
+    case 3: return .orange
+    case 4: return .purple
+    default: return .secondary
+    }
+}
+
+struct MacRoundBadge: View {
+    let round: Int
+    var body: some View {
+        if round > 1 {
+            Text("\(round)周目")
+                .font(.caption2.bold())
+                .foregroundStyle(roundAccent(round))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(round <= 4 ? roundAccent(round).opacity(0.14) : Color.clear, in: Capsule())
+                .overlay(Capsule().stroke(roundAccent(round).opacity(0.7), lineWidth: 1))
         }
     }
 }
@@ -53,12 +95,20 @@ struct ContentView: View {
                         HStack {
                             Image(systemName: group.language == StudyLanguage.chinese.rawValue ? "character.book.closed" : "text.book.closed")
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(group.name).lineLimit(1)
-                                Text("\(group.words.count)語")
-                                    .font(.caption).foregroundStyle(.secondary)
+                                AdaptiveBookName(text: group.name, size: 13, weight: .regular)
+                                HStack(spacing: 6) {
+                                    Text("\(group.words.count)語")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                    MacRoundBadge(round: group.currentRound)
+                                }
                             }
                         }
                         .tag(group.id)
+                        .listRowBackground(
+                            (2...4).contains(group.currentRound)
+                                ? roundAccent(group.currentRound).opacity(0.08)
+                                : Color.clear
+                        )
                     }
                 }
             }
@@ -106,6 +156,7 @@ struct DashboardView: View {
     @State private var questionCount = 10
     @State private var showDeleteConfirmation = false
     @State private var showResetConfirmation = false
+    @State private var settingsExpanded: Bool
 
     init(store: TangoStore, group: VocabGroup) {
         self.store = store
@@ -115,11 +166,16 @@ struct DashboardView: View {
         _multipleChoice = State(initialValue: settings.multipleChoice)
         _filter = State(initialValue: settings.filter)
         _questionCount = State(initialValue: settings.questionCount)
+        _settingsExpanded = State(initialValue: !store.simpleMode)
     }
 
     private var learned: Int { group.words.filter { $0.studyCount >= 2 && $0.isCorrectLast }.count }
     private var vague: Int { group.words.filter { $0.studyCount == 1 && $0.isCorrectLast }.count }
     private var review: Int { group.words.count - learned - vague }
+    private var touchedPercent: Int {
+        guard !group.words.isEmpty else { return 0 }
+        return group.words.filter { $0.studyCount > 0 }.count * 100 / group.words.count
+    }
     private var targetLanguageName: String {
         let language = StudyLanguage.from(group.language)
         return language == .none ? "対象言語" : language.displayName
@@ -128,11 +184,14 @@ struct DashboardView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(group.name).font(.largeTitle.bold())
-                        Text("\(group.words.count)語・\(StudyLanguage.from(group.language).displayName)")
-                            .foregroundStyle(.secondary)
+                        AdaptiveBookName(text: "選択中: \(group.name)", size: 30, weight: .bold)
+                        HStack {
+                            Text("\(group.words.count)語・\(StudyLanguage.from(group.language).displayName)")
+                                .foregroundStyle(.secondary)
+                            MacRoundBadge(round: group.currentRound)
+                        }
                     }
                     Spacer()
                     Menu {
@@ -151,70 +210,55 @@ struct DashboardView: View {
                     .menuStyle(.borderlessButton)
                 }
 
-                GroupBox("学習状況") {
-                    VStack(spacing: 12) {
-                        GeometryReader { geometry in
-                            HStack(spacing: 0) {
-                                if learned > 0 { Color.green.frame(width: geometry.size.width * CGFloat(learned) / CGFloat(max(group.words.count, 1))) }
-                                if vague > 0 { Color.orange.frame(width: geometry.size.width * CGFloat(vague) / CGFloat(max(group.words.count, 1))) }
-                                if review > 0 { Color.red.opacity(0.75) }
+                if store.simpleMode {
+                    GroupBox("学習進捗度") {
+                        VStack(spacing: 9) {
+                            HStack {
+                                Spacer()
+                                Text("\(touchedPercent)%")
+                                    .font(.headline.bold())
+                                    .padding(.horizontal, 12).padding(.vertical, 5)
+                                    .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
                             }
-                            .clipShape(Capsule())
+                            ProgressView(value: Double(touchedPercent), total: 100)
+                                .progressViewStyle(.linear)
+                                .scaleEffect(x: 1, y: 1.8)
                         }
-                        .frame(height: 13)
-                        HStack {
-                            StatusLabel(color: .green, title: "習得済み", value: learned)
-                            Spacer()
-                            StatusLabel(color: .orange, title: "うろ覚え", value: vague)
-                            Spacer()
-                            StatusLabel(color: .red, title: "未学習・要復習", value: review)
-                        }
+                        .padding(.top, 4)
                     }
-                    .padding(.top, 6)
+                } else {
+                    GroupBox("学習状況") {
+                        VStack(spacing: 12) {
+                            GeometryReader { geometry in
+                                HStack(spacing: 0) {
+                                    if learned > 0 { Color.green.frame(width: geometry.size.width * CGFloat(learned) / CGFloat(max(group.words.count, 1))) }
+                                    if vague > 0 { Color.orange.frame(width: geometry.size.width * CGFloat(vague) / CGFloat(max(group.words.count, 1))) }
+                                    if review > 0 { Color.red.opacity(0.75) }
+                                }
+                                .clipShape(Capsule())
+                            }
+                            .frame(height: 13)
+                            HStack {
+                                StatusLabel(color: .green, title: "習得済み", value: learned)
+                                Spacer()
+                                StatusLabel(color: .orange, title: "うろ覚え", value: vague)
+                                Spacer()
+                                StatusLabel(color: .red, title: "未学習・要復習", value: review)
+                            }
+                        }
+                        .padding(.top, 6)
+                    }
                 }
 
-                GroupBox("出題設定") {
-                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 14) {
-                        GridRow {
-                            Text("出題方向").fontWeight(.semibold)
-                            Picker("", selection: $forward) {
-                                Text("\(targetLanguageName) → 日本語").tag(true)
-                                Text("日本語 → \(targetLanguageName)").tag(false)
-                            }
-                            .labelsHidden().pickerStyle(.segmented)
-                            .disabled(!multipleChoice)
-                        }
-                        GridRow {
-                            Text("回答形式").fontWeight(.semibold)
-                            Picker("", selection: $multipleChoice) {
-                                Text("4択").tag(true)
-                                Text("タイピング").tag(false)
-                            }
-                            .labelsHidden().pickerStyle(.segmented)
-                            .onChange(of: multipleChoice) { value in
-                                if !value { forward = false }
-                                persistStudySettings()
-                            }
-                        }
-                        GridRow {
-                            Text("出題対象").fontWeight(.semibold)
-                            Picker("", selection: $filter) {
-                                ForEach(StudyFilter.allCases) { option in Text(option.rawValue).tag(option) }
-                            }
-                            .labelsHidden()
-                            .onChange(of: filter) { _ in persistStudySettings() }
-                        }
-                        GridRow {
-                            Text("問題数").fontWeight(.semibold)
-                            Picker("", selection: $questionCount) {
-                                Text("5問").tag(5); Text("10問").tag(10); Text("20問").tag(20)
-                                Text("50問").tag(50); Text("全問").tag(0)
-                            }
-                            .labelsHidden().pickerStyle(.segmented)
-                            .onChange(of: questionCount) { _ in persistStudySettings() }
-                        }
+                if store.simpleMode {
+                    DisclosureGroup("出題設定", isExpanded: $settingsExpanded) {
+                        settingsControls.padding(.top, 8)
                     }
-                    .padding(.top, 6)
+                    .font(.system(size: 15, weight: .semibold))
+                    .padding(12)
+                    .background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 8))
+                } else {
+                    GroupBox("出題設定") { settingsControls.padding(.top, 6) }
                 }
 
                 Button {
@@ -228,6 +272,7 @@ struct DashboardView: View {
             }
             .padding(28)
             .frame(maxWidth: 880)
+            .font(.system(size: store.simpleMode ? 15 : 13))
         }
         .confirmationDialog("この単語帳を削除しますか？", isPresented: $showDeleteConfirmation) {
             Button("削除", role: .destructive) { store.deleteSelected() }
@@ -236,6 +281,47 @@ struct DashboardView: View {
             Button("リセット", role: .destructive) { store.resetSelected() }
         }
         .onChange(of: forward) { _ in persistStudySettings() }
+        .onChange(of: store.simpleMode) { simple in settingsExpanded = !simple }
+    }
+
+    private var settingsControls: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("出題方向").fontWeight(.semibold)
+                Picker("", selection: $forward) {
+                    Text("\(targetLanguageName) → 日本語").tag(true)
+                    Text("日本語 → \(targetLanguageName)").tag(false)
+                }
+                .labelsHidden().pickerStyle(.segmented).disabled(!multipleChoice)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("回答形式").fontWeight(.semibold)
+                Picker("", selection: $multipleChoice) {
+                    Text("4択").tag(true); Text("タイピング").tag(false)
+                }
+                .labelsHidden().pickerStyle(.segmented)
+                .onChange(of: multipleChoice) { value in
+                    if !value { forward = false }
+                    persistStudySettings()
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("出題対象").fontWeight(.semibold)
+                Picker("", selection: $filter) {
+                    ForEach(StudyFilter.allCases) { option in Text(option.rawValue).tag(option) }
+                }
+                .labelsHidden().onChange(of: filter) { _ in persistStudySettings() }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("問題数").fontWeight(.semibold)
+                Picker("", selection: $questionCount) {
+                    Text("5問").tag(5); Text("10問").tag(10); Text("20問").tag(20)
+                    Text("50問").tag(50); Text("全問").tag(0)
+                }
+                .labelsHidden().pickerStyle(.segmented)
+                .onChange(of: questionCount) { _ in persistStudySettings() }
+            }
+        }
     }
 
     private func persistStudySettings() {
@@ -274,6 +360,8 @@ struct QuizView: View {
                 QuizSummaryView(store: store, quiz: quiz)
             } else {
                 let question = quiz.questions[quiz.index]
+                GeometryReader { geometry in
+                    ScrollView {
                 VStack(spacing: 18) {
                     HStack {
                         Button("学習を中断") { store.closeQuiz() }
@@ -291,7 +379,7 @@ struct QuizView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 Text(question.prompt)
-                                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                                    .font(.system(size: 38 * store.quizTextScale, weight: .bold, design: .rounded))
                                     .multilineTextAlignment(.center)
                                 Image(systemName: "speaker.wave.2.fill")
                                     .font(.title2)
@@ -309,9 +397,19 @@ struct QuizView: View {
                     Spacer()
 
                     if quiz.isMultipleChoice {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        let columns = geometry.size.width < 620
+                            ? [GridItem(.flexible())]
+                            : [GridItem(.flexible()), GridItem(.flexible())]
+                        LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(question.choices, id: \.self) { choice in
-                                Button(choice) { store.submit(choice) }
+                                Button { store.submit(choice) } label: {
+                                    Text(choice)
+                                        .font(.system(size: 15 * store.quizTextScale, weight: .semibold))
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, minHeight: 34 * store.quizTextScale)
+                                        .padding(.vertical, 6)
+                                }
                                     .buttonStyle(.bordered)
                                     .controlSize(.large)
                                     .disabled(quiz.checked)
@@ -340,6 +438,7 @@ struct QuizView: View {
                     }
                 }
                 .padding(28)
+                .frame(minHeight: max(0, geometry.size.height - 56))
                 .onAppear { if store.ttsEnabled && question.speaksPrompt { speak(question.prompt, language: quiz.language) } }
                 .onChange(of: quiz.index) { _ in
                     if let next = store.session, next.index < next.questions.count {
@@ -350,6 +449,8 @@ struct QuizView: View {
                 .onChange(of: quiz.checked) { checked in
                     if checked, !quiz.directionForward {
                         speak(question.answer, language: quiz.language)
+                    }
+                }
                     }
                 }
             }
@@ -435,6 +536,23 @@ struct PreferencesView: View {
             Toggle("問題を自動読み上げ", isOn: Binding(get: { store.ttsEnabled }, set: {
                 store.ttsEnabled = $0; store.updatePreferences()
             }))
+            Toggle("シンプルモード", isOn: Binding(get: { store.simpleMode }, set: {
+                store.simpleMode = $0; store.updatePreferences()
+            }))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("問題・4択の文字サイズ").fontWeight(.semibold)
+                Picker("", selection: Binding(get: { store.quizTextScale }, set: {
+                    store.quizTextScale = $0; store.updatePreferences()
+                })) {
+                    Text("小").tag(0.8)
+                    Text("標準").tag(1.0)
+                    Text("大").tag(1.2)
+                    Text("特大").tag(1.4)
+                }
+                .labelsHidden().pickerStyle(.segmented)
+                Text("問題文と4択を同時に変更し、長い選択肢は複数行で表示します。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             GroupBox("学習記録ZIP") {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("すべてのCSVと学習記録を移行します。同一CSVは成績を統合し、内容が異なる場合は新しい単語帳として追加します。")
@@ -474,7 +592,7 @@ enum StudyArchiveFileActions {
     static func exportArchive(from store: TangoStore) {
         let panel = NSSavePanel()
         panel.title = "学習記録ZIPを書き出す"
-        panel.nameFieldStringValue = "Tango-pro-study-records-v1.2.1.zip"
+        panel.nameFieldStringValue = "Tango-pro-study-records-v2.0.0.zip"
         panel.allowedContentTypes = [.zip]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {

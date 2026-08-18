@@ -3,10 +3,18 @@ package com.example.data
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
+data class GroupRoundProgress(
+    val groupId: Long,
+    val minimumStudyCount: Int
+)
+
 @Dao
 interface WordDao {
     @Query("SELECT * FROM study_groups ORDER BY sortOrder ASC, createdAt DESC")
     fun getGroups(): Flow<List<StudyGroup>>
+
+    @Query("SELECT groupId, MIN(studyCount) AS minimumStudyCount FROM words GROUP BY groupId")
+    fun getGroupRoundProgress(): Flow<List<GroupRoundProgress>>
 
     @Query("SELECT * FROM study_groups ORDER BY sortOrder ASC, createdAt DESC")
     suspend fun getGroupsDirect(): List<StudyGroup>

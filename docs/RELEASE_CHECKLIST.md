@@ -11,11 +11,13 @@ Tango proをGitHubへ公開するときの確認事項です。生成物はGit�
 
 ## Android
 
-- [ ] `./gradlew test lint stageDebugApk` が成功する
+- [ ] 署名環境変数を指定した `./gradlew test lint stageReleaseApk` が成功する
 - [ ] APKのversionCode / versionNameを確認する
 - [ ] `apksigner verify --verbose --print-certs` が成功する
-- [ ] debug APKであることをRelease本文とファイル名に明記する
-- [ ] デバッグ鍵が異なる既存版には上書きできないことを明記する
+- [ ] 公開済みAPKと署名証明書が一致することを確認する
+- [ ] 署名証明書が異なる既存版には上書きできないことを明記する
+- [ ] 組み込み17冊と旧標準英語資産の非同梱をテストする
+- [ ] 狭幅、横長、特大文字、複数行4択のRobolectric UIテストが成功する
 
 ## macOS
 
@@ -24,6 +26,8 @@ Tango proをGitHubへ公開するときの確認事項です。生成物はGit�
 - [ ] `lipo -info` でx86_64 / arm64を確認する
 - [ ] `codesign --verify --deep --strict` が成功する
 - [ ] ad-hoc署名・未NotarizeであることをRelease本文に明記する
+- [ ] 標準カタログ世代1→2の移行と、削除済み冊子を再生成しないことを確認する
+- [ ] 680×500、横長ウィンドウ、文字サイズ4段階を確認する
 
 ## GitHub
 

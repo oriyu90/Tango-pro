@@ -50,6 +50,11 @@ struct VocabGroup: Codable, Identifiable, Hashable, Sendable {
     var studySettings: GroupStudySettings? = nil
     var createdAt = Date()
     var words: [VocabWord]
+
+    var currentRound: Int {
+        guard let minimum = words.map(\.studyCount).min() else { return 1 }
+        return max(1, minimum + 1)
+    }
 }
 
 enum StudyFilter: String, CaseIterable, Identifiable, Codable, Sendable {
@@ -219,6 +224,9 @@ private struct SavedState: Codable, Sendable {
     var darkMode: Bool
     var ttsEnabled: Bool
     var bundledImportCompleted: Bool?
+    var bundledCatalogVersion: Int?
+    var simpleMode: Bool?
+    var quizTextScale: Double?
 }
 
 private enum PersistenceError: LocalizedError {
@@ -259,6 +267,8 @@ final class TangoStore: ObservableObject {
     @Published var selectedGroupID: UUID?
     @Published var darkMode = false
     @Published var ttsEnabled = true
+    @Published var simpleMode = false
+    @Published var quizTextScale = 1.0
     @Published var session: QuizSession?
     @Published var message: String?
 
@@ -267,6 +277,8 @@ final class TangoStore: ObservableObject {
     private let persistenceWriter = PersistenceWriter()
     private var persistenceEnabled = true
     private var bundledImportCompleted = false
+    private var bundledCatalogVersion = 0
+    private static let currentBundledCatalogVersion = 2
 
     init(storageDirectory: URL? = nil, bundledCSVURL: URL? = nil) {
         let base = storageDirectory
@@ -282,7 +294,7 @@ final class TangoStore: ObservableObject {
             message = "保存フォルダを作成できません。学習結果は保存されません。\n\(error.localizedDescription)"
         }
         load()
-        if !bundledImportCompleted { importBundledGroups() }
+        if bundledCatalogVersion < Self.currentBundledCatalogVersion { importBundledGroups() }
         if selectedGroupID == nil || !groups.contains(where: { $0.id == selectedGroupID }) {
             selectedGroupID = groups.first?.id
         }
@@ -333,7 +345,7 @@ final class TangoStore: ObservableObject {
 
     func exportStudyArchive(to url: URL) throws {
         flushPersistence()
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.1"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.0.0"
         try StudyArchiveCodec.write(groups: groups, to: url, appVersion: version)
     }
 
@@ -511,14 +523,23 @@ final class TangoStore: ObservableObject {
 
     private func importBundledGroups() {
         let specs = [
-            ("basic_english_phrases", "英語基本フレーズ", "en"),
-            ("basic_english_words", "英語基本単語", "en"),
             ("basic_chinese_words", "中国語基本単語", "zh"),
-            ("common_test_words", "共テ用英単語", "en"),
-            ("common_test_phrases", "共テ用英熟語", "en"),
-            ("advanced_words", "難関大用英単語", "en"),
-            ("advanced_phrases", "難関大用英熟語", "en"),
-            ("pre_high_school_vocab", "高校レベル未満の単熟語", "en")
+            ("lv1_intro_words", "Lv.1中学入門英単語", "en"),
+            ("lv1_intro_phrases", "Lv.1中学入門英熟語", "en"),
+            ("lv2_junior_beginner_words", "Lv.2中学初級英単語", "en"),
+            ("lv2_junior_beginner_phrases", "Lv.2中学初級英熟語", "en"),
+            ("lv3_junior_intermediate_words", "Lv.3中学中級英単語", "en"),
+            ("lv3_junior_intermediate_phrases", "Lv.3中学中級英熟語", "en"),
+            ("lv4_high_intro_words", "Lv.4高校入門英単語", "en"),
+            ("lv4_high_intro_phrases", "Lv.4高校入門英熟語", "en"),
+            ("lv5_high_beginner_words", "Lv.5高校初級英単語", "en"),
+            ("lv5_high_beginner_phrases", "Lv.5高校初級英熟語", "en"),
+            ("lv6_high_intermediate_words", "Lv.6高校中級英単語", "en"),
+            ("lv6_high_intermediate_phrases", "Lv.6高校中級英熟語", "en"),
+            ("lv7_high_advanced_words", "Lv.7高校上級英単語", "en"),
+            ("lv7_high_advanced_phrases", "Lv.7高校上級英熟語", "en"),
+            ("lv8_expert_words", "Lv.8発展英単語", "en"),
+            ("lv8_expert_phrases", "Lv.8発展英熟語", "en")
         ]
         guard let resources = bundledCSVURL else { return }
         let availableFiles = (try? FileManager.default.contentsOfDirectory(at: resources,
@@ -536,7 +557,8 @@ final class TangoStore: ObservableObject {
         bundledImportCompleted = specs.allSatisfy { spec in
             groups.contains(where: { $0.name == spec.1 })
         }
-        selectedGroupID = groups.first?.id
+        if bundledImportCompleted { bundledCatalogVersion = Self.currentBundledCatalogVersion }
+        if selectedGroupID == nil { selectedGroupID = groups.first?.id }
         save()
     }
 
@@ -550,9 +572,12 @@ final class TangoStore: ObservableObject {
             selectedGroupID = saved.selectedGroupID
             darkMode = saved.darkMode
             ttsEnabled = saved.ttsEnabled
+            simpleMode = saved.simpleMode ?? false
+            quizTextScale = Self.normalizedQuizTextScale(saved.quizTextScale ?? 1.0)
             // Old local builds imported bundled data only when the database was empty.
             // Treat existing user data as already bootstrapped to avoid surprise imports.
             bundledImportCompleted = saved.bundledImportCompleted ?? !saved.groups.isEmpty
+            bundledCatalogVersion = saved.bundledCatalogVersion ?? (bundledImportCompleted ? 1 : 0)
         } catch {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -572,7 +597,10 @@ final class TangoStore: ObservableObject {
         guard persistenceEnabled else { return }
         let state = SavedState(groups: groups, selectedGroupID: selectedGroupID,
                                darkMode: darkMode, ttsEnabled: ttsEnabled,
-                               bundledImportCompleted: bundledImportCompleted)
+                               bundledImportCompleted: bundledImportCompleted,
+                               bundledCatalogVersion: bundledCatalogVersion,
+                               simpleMode: simpleMode,
+                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale))
         persistenceWriter.write(state, to: saveURL) { [weak self] error in
             guard let error else { return }
             Task { @MainActor [weak self] in
@@ -585,8 +613,15 @@ final class TangoStore: ObservableObject {
         guard persistenceEnabled else { throw CocoaError(.fileWriteUnknown) }
         let state = SavedState(groups: groups, selectedGroupID: selectedGroupID,
                                darkMode: darkMode, ttsEnabled: ttsEnabled,
-                               bundledImportCompleted: bundledImportCompleted)
+                               bundledImportCompleted: bundledImportCompleted,
+                               bundledCatalogVersion: bundledCatalogVersion,
+                               simpleMode: simpleMode,
+                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale))
         try JSONEncoder().encode(state).write(to: saveURL, options: .atomic)
+    }
+
+    private static func normalizedQuizTextScale(_ value: Double) -> Double {
+        [0.8, 1.0, 1.2, 1.4].min(by: { abs($0 - value) < abs($1 - value) }) ?? 1.0
     }
 }
 

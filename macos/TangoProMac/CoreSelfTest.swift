@@ -34,6 +34,8 @@ struct CoreSelfTest {
             repetitionStore.continueQuiz()
         }
         precondition(repetitionStore.selectedGroup?.words.first?.studyCount == 2)
+        precondition(repetitionStore.selectedGroup?.currentRound == 3,
+                     "Every completed pass must advance the displayed round")
         precondition(repetitionStore.session?.questions.count == 1,
                      "A fully learned book must remain repeatable in recommended mode")
         precondition(repetitionStore.session?.index == 0,
@@ -48,6 +50,9 @@ struct CoreSelfTest {
         repetitionStore.updateStudySettings(for: secondID, settings: GroupStudySettings(
             directionForward: true, multipleChoice: true, filter: .unstudied, questionCount: 5
         ))
+        repetitionStore.simpleMode = true
+        repetitionStore.quizTextScale = 1.4
+        repetitionStore.updatePreferences()
         repetitionStore.flushPersistence()
 
         let reopenedRepetitionStore = TangoStore(
@@ -60,6 +65,8 @@ struct CoreSelfTest {
         precondition(reopenedRepetitionStore.studySettings(for: secondID).filter == .unstudied)
         precondition(reopenedRepetitionStore.studySettings(for: secondID).questionCount == 5,
                      "Study settings must remain independent for each CSV book")
+        precondition(reopenedRepetitionStore.simpleMode)
+        precondition(reopenedRepetitionStore.quizTextScale == 1.4)
         reopenedRepetitionStore.flushPersistence()
 
         let legacyFolder = FileManager.default.temporaryDirectory
@@ -101,7 +108,7 @@ struct CoreSelfTest {
         let assetsFolder = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("app/src/main/assets", isDirectory: true)
         let bootstrapStore = TangoStore(storageDirectory: bootstrapFolder, bundledCSVURL: assetsFolder)
-        precondition(bootstrapStore.groups.count == 8)
+        precondition(bootstrapStore.groups.count == 17)
         while bootstrapStore.selectedGroupID != nil { bootstrapStore.deleteSelected() }
         bootstrapStore.flushPersistence()
 
@@ -171,7 +178,7 @@ struct CoreSelfTest {
         }
         if let index = arguments.firstIndex(of: "--write-fixture"), index + 1 < arguments.count {
             try StudyArchiveCodec.write(groups: [remote, changed],
-                                        to: URL(fileURLWithPath: arguments[index + 1]), appVersion: "1.2.1")
+                                        to: URL(fileURLWithPath: arguments[index + 1]), appVersion: "2.0.0")
         }
         print("TangoCore self-test: PASS")
     }

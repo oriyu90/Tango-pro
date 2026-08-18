@@ -1,0 +1,2 @@
+67071651ecab13495384edf3cb1fcae00e98ec354a7942628ace8c6a13b7f10d  dist-android/Tango-pro-2.0.0-android.apk
+54f343f17e352faceffa42f93ddb19d1fd9028321f5abc20ce287bbeb1048669  dist-macos/Tango-pro-2.0.0-universal.dmg
