@@ -11,6 +11,11 @@
 - `robots.txt`
 - `sitemap.xml`
 
+追加導線:
+
+- ページ内目次（機能、CSV、ダウンロード、インストール、問い合わせ）
+- Android／macOS別インストール手順
+
 ## 構文・意味構造
 
 - `html-validate`: errors 0 / warnings 0
@@ -35,6 +40,8 @@
 1280×800では、ヒーローの見出し、説明、主要CTA、アプリアイコンがスクロール前の範囲に収まることを確認した。ページ内ナビゲーション「できること」から`#features`へ移動でき、対象見出しが表示される。ブラウザコンソールのerror / warningは0件。
 
 実表示テストで検出した画像の縦横比固定と日本語見出しの不自然な改行を修正し、全viewportで再確認した。
+
+インストール案内追加後も320／375／414／768／1280pxで再検証し、横スクロール、画面外要素、画像エラー、コンソールerror / warningがないことを確認した。目次の「インストール」から`#install`へ移動し、対象見出しが表示される。狭幅で補足リンクが改行し得る状態を修正し、320pxで主要操作リンクが1行に収まることを再確認した。
 
 ## アクセシビリティ・デザイン
 
@@ -63,5 +70,6 @@
 - `SoftwareApplication` JSON-LDへOS、バージョン、開発者、価格、ライセンスを設定
 - `robots.txt`と`sitemap.xml`を追加
 - APK、DMG、Discord、X、公式サイト、GitHub ReleaseのリンクがHTTP 200へ到達することを確認
+- GoogleのAndroid安全案内、AppleのGatekeeper案内、SHA-256チェックサムへのリンクがHTTP 200へ到達することを確認
 
 Google Search Consoleへのプロパティ登録とサイトマップ送信は、GitHub Pages公開後に所有者アカウントから行う。

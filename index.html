@@ -66,6 +66,7 @@
       <nav class="main-nav" aria-label="メインナビゲーション">
         <a href="#features">できること</a>
         <a href="#csv">CSV</a>
+        <a href="#install">インストール</a>
         <a class="nav-download" href="#download">ダウンロード</a>
       </nav>
       <span class="header-release">v2.0.0</span>
@@ -93,6 +94,19 @@
         </aside>
       </div>
     </section>
+
+    <nav class="page-index" aria-label="ページ内目次">
+      <div class="page-width page-index-inner">
+        <span class="page-index-label">このページの案内</span>
+        <ol>
+          <li><a href="#features">できること</a></li>
+          <li><a href="#csv">CSVの形式</a></li>
+          <li><a href="#download">ダウンロード</a></li>
+          <li><a href="#install">インストール</a></li>
+          <li><a href="#community">問い合わせ</a></li>
+        </ol>
+      </div>
+    </nav>
 
     <section class="section" id="features" aria-labelledby="features-title">
       <div class="page-width">
@@ -191,7 +205,45 @@
       </div>
     </section>
 
-    <section class="section" aria-labelledby="community-title">
+    <section class="section install-section" id="install" aria-labelledby="install-title">
+      <div class="page-width">
+        <div class="section-heading">
+          <h2 id="install-title">ダウンロードしたら、ここから。</h2>
+          <p>ストアを経由しない配布です。必ずこの公式サイトまたはGitHub Releaseから取得し、更新前には学習記録ZIPを保存してください。</p>
+        </div>
+
+        <div class="install-layout">
+          <article class="install-platform">
+            <h3>Androidへインストール</h3>
+            <ol class="step-list">
+              <li><span class="step-number">1</span><span><a href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-android.apk">公式APK</a>をAndroid端末へダウンロードします。</span></li>
+              <li><span class="step-number">2</span><span>通知または「ファイル」アプリから<code>Tango-pro-2.0.0-android.apk</code>を開きます。</span></li>
+              <li><span class="step-number">3</span><span>提供元からのインストール許可を求められた場合は、警告とファイル名を確認してから、そのダウンロード元にだけ許可します。</span></li>
+              <li><span class="step-number">4</span><span>「インストール」を選び、完了後にTango proを開きます。端末や地域によって追加の安全確認が表示される場合があります。</span></li>
+            </ol>
+            <p class="install-reference"><a href="https://support.google.com/android/answer/9457058?hl=ja" target="_blank" rel="noopener noreferrer">Googleの安全に関する案内を確認</a></p>
+          </article>
+
+          <article class="install-platform">
+            <h3>macOSへインストール</h3>
+            <ol class="step-list">
+              <li><span class="step-number">1</span><span><a href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/Tango-pro-2.0.0-universal.dmg">公式DMG</a>をMacへダウンロードして開きます。</span></li>
+              <li><span class="step-number">2</span><span>「Tango pro」を同じ画面の「Applications」へドラッグし、コピー後にDMGを取り出します。</span></li>
+              <li><span class="step-number">3</span><span>アプリケーションフォルダからTango proを一度開きます。開発元を確認できないという警告が出た場合は、いったん閉じます。</span></li>
+              <li><span class="step-number">4</span><span>チェックサムと入手元を確認できた場合だけ、「システム設定」→「プライバシーとセキュリティ」→「このまま開く」を選びます。</span></li>
+            </ol>
+            <p class="install-reference"><a href="https://support.apple.com/ja-jp/102445" target="_blank" rel="noopener noreferrer">AppleのGatekeeper案内を確認</a></p>
+          </article>
+        </div>
+
+        <div class="install-note">
+          <strong>安全の確認</strong>
+          <span>macOS版はad-hoc署名・未Notarizeです。ファイル名と<a href="https://github.com/oriyu90/Tango-pro/releases/download/v2.0.0/CHECKSUMS_v2.0.0.txt">SHA-256チェックサム</a>を確認し、不明な配布元から取得したファイルは開かないでください。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="community" aria-labelledby="community-title">
       <div class="page-width project-note">
         <div>
           <h2 id="community-title">つくった人と、つながる場所。</h2>

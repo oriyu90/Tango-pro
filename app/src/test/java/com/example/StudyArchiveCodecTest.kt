@@ -125,6 +125,26 @@ class StudyArchiveCodecTest {
         assertTrue(imported.all { it.words.isNotEmpty() })
     }
 
+    @Test
+    fun `committed archive fixtures remain readable`() {
+        val fixtureDirectory = sequenceOf(
+            File("testdata/fixtures"),
+            File("../testdata/fixtures")
+        ).firstOrNull { it.isDirectory }
+        assertTrue("testdata/fixtures directory must exist", fixtureDirectory != null)
+
+        val fixtures = fixtureDirectory!!.listFiles { file ->
+            file.isFile && file.extension.equals("zip", ignoreCase = true)
+        }?.sortedBy { it.name }.orEmpty()
+        assertTrue("At least one committed archive fixture is required", fixtures.isNotEmpty())
+
+        fixtures.forEach { fixture ->
+            val imported = StudyArchiveCodec.fromByteArray(fixture.readBytes())
+            assertTrue("${fixture.name} must contain a group", imported.isNotEmpty())
+            assertTrue("${fixture.name} must contain words", imported.all { it.words.isNotEmpty() })
+        }
+    }
+
     private fun word(
         row: Int,
         term: String,

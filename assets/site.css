@@ -310,6 +310,48 @@ h1 {
   padding-block: clamp(var(--space-3xl), 9vw, var(--space-5xl));
 }
 
+.page-index {
+  border-bottom: var(--rule-strong) solid var(--color-ink);
+  background: var(--color-paper-deep);
+}
+
+.page-index-inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-xl);
+  align-items: center;
+  padding-block: var(--space-lg);
+}
+
+.page-index-label {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.page-index ol {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-index a {
+  display: block;
+  padding-block: var(--space-xs);
+  border-bottom: var(--rule-hairline) solid var(--color-line-dark);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.page-index a:hover {
+  border-color: var(--color-gold-deep);
+  color: var(--color-gold-deep);
+}
+
 .section-dark {
   background: var(--color-ink);
   color: var(--color-white);
@@ -581,6 +623,79 @@ h1 {
   font-size: var(--text-sm);
 }
 
+.install-section {
+  border-bottom: var(--rule-strong) solid var(--color-ink);
+}
+
+.install-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: var(--rule-strong) solid var(--color-ink);
+}
+
+.install-platform {
+  min-width: 0;
+  padding: var(--space-2xl) var(--space-2xl) var(--space-2xl) 0;
+}
+
+.install-platform + .install-platform {
+  padding-right: 0;
+  padding-left: var(--space-2xl);
+  border-left: var(--rule-hairline) solid var(--color-line);
+}
+
+.install-platform h3 {
+  margin-bottom: var(--space-xl);
+  font-size: var(--text-xl);
+}
+
+.step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-list li {
+  display: grid;
+  grid-template-columns: var(--space-xl) minmax(0, 1fr);
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+  border-top: var(--rule-hairline) solid var(--color-line);
+}
+
+.step-number {
+  color: var(--color-gold-deep);
+  font-weight: 900;
+}
+
+.step-list code {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.install-reference {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.install-reference a {
+  white-space: nowrap;
+}
+
+.install-note {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.3fr) minmax(0, 1fr);
+  gap: var(--space-xl);
+  padding-block: var(--space-xl);
+}
+
+.install-note strong {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
 .project-note {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -639,8 +754,28 @@ h1 {
   .hero-grid,
   .mode-spread,
   .csv-layout,
-  .project-note {
+  .project-note,
+  .install-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-index-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .page-index ol {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .install-platform,
+  .install-platform + .install-platform {
+    padding-inline: 0;
+  }
+
+  .install-platform + .install-platform {
+    border-top: var(--rule-hairline) solid var(--color-line);
+    border-left: 0;
   }
 
   .hero-grid {
@@ -706,6 +841,15 @@ h1 {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .page-index ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-xs) var(--space-md);
+  }
+
+  .page-index li:last-child {
+    grid-column: 1 / -1;
+  }
+
   .button {
     width: 100%;
   }
@@ -743,6 +887,11 @@ h1 {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .install-note {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
   .footer-inner {
     flex-direction: column;
     align-items: flex-start;
@@ -767,6 +916,8 @@ h1 {
   .section-heading,
   .feature-row,
   .download-row,
+  .install-layout,
+  .step-list li,
   .link-columns {
     border-color: currentColor;
   }

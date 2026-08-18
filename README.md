@@ -1,5 +1,7 @@
 # Tango pro v2.0.0
 
+[![CI](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml)
+
 CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定履歴、学習履歴、CSV共有、学習記録ZIPの相互移行に対応します。
 
 [公式紹介サイト](https://oriyu90.github.io/Tango-pro/) · [v2.0.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.0.0)
@@ -83,6 +85,9 @@ macos/package_dmg.sh
 
 ## 開発資料
 
+- [リポジトリガイド](AGENTS.md)
+- [コントリビューションガイド](CONTRIBUTING.md)
+- [ドキュメント索引](docs/README.md)
 - [設計書](DESIGN_DOC.md)
 - [開発・検証手順](docs/DEVELOPMENT.md)
 - [CSV形式仕様](docs/CSV_FORMAT.md)

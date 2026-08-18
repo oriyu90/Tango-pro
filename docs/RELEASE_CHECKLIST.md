@@ -4,10 +4,13 @@ Tango proをGitHubへ公開するときの確認事項です。生成物はGit�
 
 ## ソース
 
+- [ ] GitHub Actions CIが成功する
+- [ ] `scripts/check_repository_hygiene.sh`、`check_version_lockstep.sh`、`check_site.py`が成功する
 - [ ] `git diff --check` が成功する
 - [ ] 秘密鍵、パスワード、API token、`local.properties`、`.env`が追跡されていない
 - [ ] `.gradle/`、`.kotlin/`、`build/`、`.local-archive/`が追跡されていない
 - [ ] README、設計書、変更履歴、リリースノートのバージョンが一致する
+- [ ] `testdata/fixtures/`のAndroid/macOS固定fixtureを両OSが読める
 
 ## Android
 
@@ -36,6 +39,7 @@ Tango proをGitHubへ公開するときの確認事項です。生成物はGit�
 - [ ] ReleaseにAPK、DMG、checksumsを添付する
 - [ ] Releaseページから添付物とSHA-256を確認する
 - [ ] リポジトリがPublicで、説明・topics・既定branchが正しいことを確認する
+- [ ] main保護、必須CI、force-push禁止などの設定はユーザー本人が確認する
 
 ## 正式配布へ移行する場合の追加確認
 

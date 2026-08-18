@@ -1,7 +1,10 @@
 # IDE and operating-system files
 .DS_Store
 .idea/
+.vscode/
 *.iml
+__pycache__/
+*.py[cod]
 
 # Local Gradle/Android state
 .gradle/
@@ -11,9 +14,14 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+.build/
+DerivedData/
+*.xcuserstate
 
 # Local credentials
 .env
+.env.*
+!.env.example
 *.jks
 *.keystore
 
@@ -25,6 +33,7 @@ captures/
 dist/
 dist-android/
 dist-macos/
+tmp/
 
 # Local files retained during the v1.1.2 source cleanup
 .local-archive/

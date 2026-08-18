@@ -180,6 +180,21 @@ struct CoreSelfTest {
             try StudyArchiveCodec.write(groups: [remote, changed],
                                         to: URL(fileURLWithPath: arguments[index + 1]), appVersion: "2.0.0")
         }
+        if let index = arguments.firstIndex(of: "--fixture-directory"), index + 1 < arguments.count {
+            let fixtureDirectory = URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
+            let fixtures = try FileManager.default.contentsOfDirectory(
+                at: fixtureDirectory,
+                includingPropertiesForKeys: nil
+            ).filter { $0.pathExtension.lowercased() == "zip" }
+                .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            precondition(!fixtures.isEmpty, "At least one committed archive fixture is required")
+            for fixture in fixtures {
+                let fixtureResult = try StudyArchiveCodec.importAndMerge(groups: [], from: fixture)
+                precondition(!fixtureResult.groups.isEmpty, "Fixture must contain a group: \(fixture.lastPathComponent)")
+                precondition(fixtureResult.groups.allSatisfy { !$0.words.isEmpty },
+                             "Fixture must contain words: \(fixture.lastPathComponent)")
+            }
+        }
         print("TangoCore self-test: PASS")
     }
 }

@@ -6,6 +6,19 @@
 - macOS: macOS 13以上、Xcode Command Line Tools
 - 秘密鍵、パスワード、`local.properties` はコミットしない
 
+## 一括検証
+
+リポジトリ衛生、バージョン同期、サイト構造、Android/macOSの双方向互換性を次の順で確認する。
+
+```bash
+bash scripts/check_repository_hygiene.sh
+bash scripts/check_version_lockstep.sh
+python3 scripts/check_site.py
+bash scripts/run_cross_platform_tests.sh
+```
+
+`run_cross_platform_tests.sh`はAndroidのテスト・lint・debug/release build、macOS Core self-test、一時fixtureによるAndroid→macOS→Androidの読み書き、`testdata/fixtures/`に保存した過去fixtureの読込を実行する。CIも同じスクリプトを使用する。
+
 ## Android
 
 ### 標準チェック
@@ -89,6 +102,14 @@ TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v2.0.0.zip \
   ./gradlew testDebugUnitTest \
   --tests 'com.example.StudyArchiveCodecTest.macOS archive fixture is Android compatible when supplied'
 ```
+
+通常は上記をまとめた`bash scripts/run_cross_platform_tests.sh`を使用する。互換形式を意図的に変更する場合だけ、仕様書とテストを先に更新したうえで次を実行し、`testdata/fixtures/`を再生成する。
+
+```bash
+TANGO_FIXTURE_OUTPUT_DIR=testdata/fixtures bash scripts/run_cross_platform_tests.sh
+```
+
+fixture名にはアプリの現在バージョンが入り、Android生成とmacOS生成の2ファイルを保存する。既存fixtureは後方互換テストのため削除しない。
 
 ### AppとDMG
 
