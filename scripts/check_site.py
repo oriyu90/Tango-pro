@@ -6,6 +6,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
+SITE_ROOT = ROOT / "website"
+PUBLIC_PREFIX = "/projects/tango-pro/"
 
 
 class SiteParser(HTMLParser):
@@ -46,7 +48,7 @@ def fail(message):
 
 
 parser = SiteParser()
-parser.feed((ROOT / "index.html").read_text(encoding="utf-8"))
+parser.feed((SITE_ROOT / "index.html").read_text(encoding="utf-8"))
 
 if len(parser.ids) != len(set(parser.ids)):
     fail("duplicate HTML id")
@@ -60,15 +62,18 @@ for link in parser.links:
 for image in parser.images:
     if not image.get("src") or "alt" not in image:
         fail("image is missing src or alt")
-    if not (ROOT / image["src"]).is_file():
+    asset_path = image["src"]
+    if asset_path.startswith(PUBLIC_PREFIX):
+        asset_path = asset_path.removeprefix(PUBLIC_PREFIX)
+    if not (SITE_ROOT / asset_path).is_file():
         fail(f"missing image asset: {image['src']}")
 
 if not parser.json_ld or parser.json_ld[0].get("@type") != "SoftwareApplication":
     fail("SoftwareApplication JSON-LD is missing")
 
-for asset in ("tokens.css", "assets/site.css", "robots.txt", "sitemap.xml", ".nojekyll"):
-    if not (ROOT / asset).is_file():
+for asset in ("tokens.css", "assets/site.css", "robots.txt", "sitemap.xml", "_redirects"):
+    if not (SITE_ROOT / asset).is_file():
         fail(f"missing site asset: {asset}")
 
-ET.parse(ROOT / "sitemap.xml")
+ET.parse(SITE_ROOT / "sitemap.xml")
 print("Site structure: PASS")
