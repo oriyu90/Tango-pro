@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.StudyQuestion
+import com.example.domain.StudyArrangementMode
 import com.example.domain.StudyLanguage
 import com.example.viewmodel.MainViewModel
 
@@ -91,6 +92,11 @@ fun StudySessionScreen(viewModel: MainViewModel) {
                         viewModel = viewModel,
                         modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())
                     )
+                }
+            } else if (viewModel.quizArrangementMode == StudyArrangementMode.EVEN_FILL) {
+                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    QuestionPanel(question, viewModel, Modifier.fillMaxWidth().weight(1f))
+                    AnswerPanel(question, viewModel, Modifier.fillMaxWidth())
                 }
             } else {
                 Column(

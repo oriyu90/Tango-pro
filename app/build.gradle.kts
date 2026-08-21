@@ -5,7 +5,7 @@ plugins {
   alias(libs.plugins.roborazzi)
 }
 
-val appVersionName = "2.0.0"
+val appVersionName = "2.1.0"
 
 android {
   namespace = "com.example"
@@ -15,7 +15,7 @@ android {
     applicationId = "com.aistudio.vocabstudier.xwqnzy"
     minSdk = 24
     targetSdk = 36
-    versionCode = 6
+    versionCode = 7
     versionName = appVersionName
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

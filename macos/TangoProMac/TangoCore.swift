@@ -66,6 +66,14 @@ enum StudyFilter: String, CaseIterable, Identifiable, Codable, Sendable {
     var id: String { rawValue }
 }
 
+/// Quiz screen layout. `evenFill` preserves the existing spread-out look;
+/// `topAligned` mirrors Android's v2.0.0 layout where content packs toward the top.
+enum QuizArrangementMode: String, CaseIterable, Identifiable, Codable, Sendable {
+    case evenFill = "均等配置"
+    case topAligned = "上寄せ"
+    var id: String { rawValue }
+}
+
 struct GroupStudySettings: Codable, Hashable, Sendable {
     var directionForward = true
     var multipleChoice = true
@@ -227,6 +235,7 @@ private struct SavedState: Codable, Sendable {
     var bundledCatalogVersion: Int?
     var simpleMode: Bool?
     var quizTextScale: Double?
+    var quizArrangementMode: QuizArrangementMode?
 }
 
 private enum PersistenceError: LocalizedError {
@@ -269,6 +278,7 @@ final class TangoStore: ObservableObject {
     @Published var ttsEnabled = true
     @Published var simpleMode = false
     @Published var quizTextScale = 1.0
+    @Published var quizArrangementMode: QuizArrangementMode = .evenFill
     @Published var session: QuizSession?
     @Published var message: String?
 
@@ -345,7 +355,7 @@ final class TangoStore: ObservableObject {
 
     func exportStudyArchive(to url: URL) throws {
         flushPersistence()
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.0.0"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.1.0"
         try StudyArchiveCodec.write(groups: groups, to: url, appVersion: version)
     }
 
@@ -574,6 +584,7 @@ final class TangoStore: ObservableObject {
             ttsEnabled = saved.ttsEnabled
             simpleMode = saved.simpleMode ?? false
             quizTextScale = Self.normalizedQuizTextScale(saved.quizTextScale ?? 1.0)
+            quizArrangementMode = saved.quizArrangementMode ?? .evenFill
             // Old local builds imported bundled data only when the database was empty.
             // Treat existing user data as already bootstrapped to avoid surprise imports.
             bundledImportCompleted = saved.bundledImportCompleted ?? !saved.groups.isEmpty
@@ -600,7 +611,8 @@ final class TangoStore: ObservableObject {
                                bundledImportCompleted: bundledImportCompleted,
                                bundledCatalogVersion: bundledCatalogVersion,
                                simpleMode: simpleMode,
-                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale))
+                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale),
+                               quizArrangementMode: quizArrangementMode)
         persistenceWriter.write(state, to: saveURL) { [weak self] error in
             guard let error else { return }
             Task { @MainActor [weak self] in
@@ -616,7 +628,8 @@ final class TangoStore: ObservableObject {
                                bundledImportCompleted: bundledImportCompleted,
                                bundledCatalogVersion: bundledCatalogVersion,
                                simpleMode: simpleMode,
-                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale))
+                               quizTextScale: Self.normalizedQuizTextScale(quizTextScale),
+                               quizArrangementMode: quizArrangementMode)
         try JSONEncoder().encode(state).write(to: saveURL, options: .atomic)
     }
 

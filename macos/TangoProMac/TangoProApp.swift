@@ -372,7 +372,7 @@ struct QuizView: View {
                     }
                     ProgressView(value: Double(quiz.index + 1), total: Double(quiz.questions.count))
 
-                    Spacer()
+                    if store.quizArrangementMode == .evenFill { Spacer() }
                     VStack(spacing: 12) {
                         Button {
                             speak(question.speaksPrompt ? question.prompt : question.answer, language: quiz.language)
@@ -394,7 +394,7 @@ struct QuizView: View {
                             Text("正解: \(question.answer)").font(.title3)
                         }
                     }
-                    Spacer()
+                    if store.quizArrangementMode == .evenFill { Spacer() }
 
                     if quiz.isMultipleChoice {
                         let columns = geometry.size.width < 620
@@ -438,7 +438,10 @@ struct QuizView: View {
                     }
                 }
                 .padding(28)
-                .frame(minHeight: max(0, geometry.size.height - 56))
+                .frame(
+                    minHeight: max(0, geometry.size.height - 56),
+                    alignment: store.quizArrangementMode == .topAligned ? .top : .center
+                )
                 .onAppear { if store.ttsEnabled && question.speaksPrompt { speak(question.prompt, language: quiz.language) } }
                 .onChange(of: quiz.index) { _ in
                     if let next = store.session, next.index < next.questions.count {
@@ -553,6 +556,18 @@ struct PreferencesView: View {
                 Text("問題文と4択を同時に変更し、長い選択肢は複数行で表示します。")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("問題画面の配置").fontWeight(.semibold)
+                Picker("", selection: Binding(get: { store.quizArrangementMode }, set: {
+                    store.quizArrangementMode = $0; store.updatePreferences()
+                })) {
+                    Text("均等配置").tag(QuizArrangementMode.evenFill)
+                    Text("上寄せ").tag(QuizArrangementMode.topAligned)
+                }
+                .labelsHidden().pickerStyle(.segmented)
+                Text("均等配置は問題を画面中央付近に広げます。上寄せは内容が短いと下に余白が出ます。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             GroupBox("学習記録ZIP") {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("すべてのCSVと学習記録を移行します。同一CSVは成績を統合し、内容が異なる場合は新しい単語帳として追加します。")
@@ -592,7 +607,7 @@ enum StudyArchiveFileActions {
     static func exportArchive(from store: TangoStore) {
         let panel = NSSavePanel()
         panel.title = "学習記録ZIPを書き出す"
-        panel.nameFieldStringValue = "Tango-pro-study-records-v2.0.0.zip"
+        panel.nameFieldStringValue = "Tango-pro-study-records-v2.1.0.zip"
         panel.allowedContentTypes = [.zip]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {

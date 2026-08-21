@@ -5,6 +5,7 @@ import com.example.data.CsvParser
 import com.example.data.Word
 import com.example.domain.AnswerNormalizer
 import com.example.domain.QuizQuestionFactory
+import com.example.domain.StudyArrangementMode
 import com.example.domain.StudyFilterMode
 import com.example.domain.StudyLanguage
 import com.example.domain.StudyProgress
@@ -112,6 +113,13 @@ class DomainLogicTest {
             listOf(learned),
             StudyFilterMode.select(listOf(vague, wrong, learned), StudyFilterMode.LEARNED_RANDOM)
         )
+    }
+
+    @Test
+    fun `unknown arrangement mode migrates to top aligned`() {
+        assertEquals(StudyArrangementMode.TOP_ALIGNED, StudyArrangementMode.normalize(null))
+        assertEquals(StudyArrangementMode.TOP_ALIGNED, StudyArrangementMode.normalize("centered"))
+        assertEquals(StudyArrangementMode.EVEN_FILL, StudyArrangementMode.normalize(StudyArrangementMode.EVEN_FILL))
     }
 
     @Test

@@ -17,6 +17,7 @@ import com.squareup.moshi.Moshi
 import com.example.domain.AnswerNormalizer
 import com.example.domain.BundledGroupCatalog
 import com.example.domain.QuizQuestionFactory
+import com.example.domain.StudyArrangementMode
 import com.example.domain.StudyFilterMode
 import com.example.domain.StudyLanguage
 import com.example.domain.StudySettings
@@ -143,6 +144,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun normalizeQuizTextScale(value: Float): Float =
         QUIZ_TEXT_SCALES.minBy { kotlin.math.abs(it - value) }
+
+    private val _quizArrangementMode = mutableStateOf(
+        StudyArrangementMode.normalize(prefs.getString("quizArrangementMode", null))
+    )
+    var quizArrangementMode: String
+        get() = _quizArrangementMode.value
+        set(value) {
+            val normalized = StudyArrangementMode.normalize(value)
+            _quizArrangementMode.value = normalized
+            prefs.edit { putString("quizArrangementMode", normalized) }
+        }
 
     private val _studyDirectionForward = mutableStateOf(legacyStudySettings.directionForward)
     var studyDirectionForward: Boolean

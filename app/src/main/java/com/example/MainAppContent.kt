@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.CsvExporter
 import com.example.data.StudyGroup
+import com.example.domain.StudyArrangementMode
 import com.example.domain.StudyLanguage
 import com.example.domain.StudyRound
 import com.example.service.SoundPlayer
@@ -818,6 +819,30 @@ fun MainAppContent(viewModel: MainViewModel) {
                                     onClick = { viewModel.quizTextScale = scale },
                                     label = { Text(label, fontWeight = FontWeight.Bold) },
                                     modifier = Modifier.testTag("quiz_text_scale_$label")
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("問題画面の配置", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(
+                            "上寄せは内容が短いと下に余白が出ます。均等配置は問題カードが画面いっぱいに広がります。",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            StudyArrangementMode.options.forEach { option ->
+                                FilterChip(
+                                    selected = viewModel.quizArrangementMode == option.id,
+                                    onClick = { viewModel.quizArrangementMode = option.id },
+                                    label = { Text(option.label, fontWeight = FontWeight.Bold) },
+                                    modifier = Modifier.testTag("quiz_arrangement_mode_${option.id}")
                                 )
                             }
                         }

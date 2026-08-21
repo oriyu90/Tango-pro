@@ -69,6 +69,22 @@ fun DashboardScreen(
     var activeErrorLog by remember(selectedGroup.id) { mutableStateOf("") }
     var settingsExpanded by rememberSaveable(selectedGroup.id, simpleMode) { mutableStateOf(!simpleMode) }
 
+    val rangeWords = remember(words, viewModel.useRangeConstraint, selectedTagConstraint, rangeStartText, rangeEndText) {
+        if (!viewModel.useRangeConstraint) {
+            emptyList()
+        } else {
+            var scoped = words
+            if (selectedTagConstraint.isNotBlank() && selectedTagConstraint != "すべて") {
+                scoped = scoped.filter { it.tag.equals(selectedTagConstraint, ignoreCase = true) }
+            }
+            val start = rangeStartText.toIntOrNull() ?: 1
+            val end = rangeEndText.toIntOrNull() ?: scoped.size
+            val from = maxOf(0, start - 1)
+            val to = minOf(scoped.size, end)
+            if (from < to) scoped.subList(from, to) else emptyList()
+        }
+    }
+
     LaunchedEffect(selectedGroup.id, totalCount) {
         if (viewModel.rangeEnd == -1 || viewModel.rangeEnd !in 1..totalCount.coerceAtLeast(1)) {
             rangeEndText = totalCount.toString()
@@ -128,6 +144,26 @@ fun DashboardScreen(
                             learnedPercent = learnedPercent,
                             vaguePercent = vaguePercent,
                             reviewPercent = reviewPercent,
+                            modifier = Modifier.fillMaxWidth().widthIn(max = 1000.dp)
+                        )
+                    }
+                }
+
+                if (viewModel.useRangeConstraint) {
+                    item {
+                        val rangeTotal = rangeWords.size
+                        val rangeLearned = rangeWords.count(StudyProgress::isLearned)
+                        val rangeVague = rangeWords.count(StudyProgress::isVague)
+                        val rangeReview = rangeTotal - rangeLearned - rangeVague
+                        DetailedProgressCard(
+                            total = rangeTotal,
+                            learned = rangeLearned,
+                            vague = rangeVague,
+                            review = rangeReview,
+                            learnedPercent = percent(rangeLearned, rangeTotal),
+                            vaguePercent = percent(rangeVague, rangeTotal),
+                            reviewPercent = if (rangeTotal == 0) 0 else 100 - percent(rangeLearned, rangeTotal) - percent(rangeVague, rangeTotal),
+                            title = "指定範囲の学習進捗度・成績ステータス（${rangeTotal}語）",
                             modifier = Modifier.fillMaxWidth().widthIn(max = 1000.dp)
                         )
                     }
@@ -199,17 +235,7 @@ fun DashboardScreen(
                                     activeErrorLog = ""
                                     val start = rangeStartText.toIntOrNull() ?: 1
                                     val end = rangeEndText.toIntOrNull() ?: totalCount
-                                    var activeWords = words
-                                    if (viewModel.useRangeConstraint) {
-                                        if (selectedTagConstraint.isNotBlank() && selectedTagConstraint != "すべて") {
-                                            activeWords = activeWords.filter {
-                                                it.tag.equals(selectedTagConstraint, ignoreCase = true)
-                                            }
-                                        }
-                                        val from = maxOf(0, start - 1)
-                                        val to = minOf(activeWords.size, end)
-                                        activeWords = if (from < to) activeWords.subList(from, to) else emptyList()
-                                    }
+                                    val activeWords = if (viewModel.useRangeConstraint) rangeWords else words
                                     if (StudyFilterMode.matching(activeWords, filterMode).isEmpty()) {
                                         activeErrorLog = "選択された学習ステータスに合致する単語がありません。"
                                     } else {
@@ -334,11 +360,12 @@ private fun DetailedProgressCard(
     learnedPercent: Int,
     vaguePercent: Int,
     reviewPercent: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String = "学習進捗度・成績ステータス"
 ) {
     Card(modifier = modifier, elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
         Column(Modifier.padding(16.dp)) {
-            Text("学習進捗度・成績ステータス", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(Modifier.height(12.dp))
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
