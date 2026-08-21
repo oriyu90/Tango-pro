@@ -1,28 +1,24 @@
-# Tango pro v2.0.0
+# Tango pro v2.1.0
 
 [![CI](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml)
 
 CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定履歴、学習履歴、CSV共有、学習記録ZIPの相互移行に対応します。
 
-[公式紹介サイト](https://oriyu90.github.io/Tango-pro/) · [v2.0.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.0.0)
+[公式紹介サイト](https://studio-rizi.pages.dev/projects/tango-pro/) · [v2.1.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.1.0)
 
 > [!WARNING]
-> v2.0.0のAndroid APKは既公開版と互換の署名証明書、macOS DMG内のアプリはad-hoc署名・未Notarizeです。更新や移行の前に、設定画面から学習記録ZIPを保存してください。
+> macOS DMG内のアプリはad-hoc署名・未Notarizeです。更新や移行の前に、設定画面から学習記録ZIPを保存してください。
 
-## v2.0.0の変更点
+> [!IMPORTANT]
+> GitHub Release版のv2.0.0 APKはデバッグ鍵で誤って署名されていました。v2.1.0はv1.1.1までと同じ正規のアップロード鍵で署名し直しています。v2.0.0 APKから更新する場合は、学習記録ZIPを書き出してからアンインストール→v2.1.0の新規インストールが必要です（v1.1.1以前からの更新は通常どおり上書き可能）。詳細は [v2.1.0リリースノート](RELEASE_NOTES_v2.1.0.md) を参照してください。
 
-- 標準単語帳を中国語基本単語1冊と、出荷用のLv.1〜Lv.8英単語・英熟語16冊へ刷新
-- 長い単語帳名を通常サイズ、80%サイズ、末尾省略の順で読みやすく表示
-- 設定から切り替えられるシンプルモードをAndroid / macOSへ追加
-- シンプルモードでは進捗をバーと%吹き出しへ集約し、出題設定を開閉可能に変更
-- 問題文・4択の文字サイズを小／標準／大／特大の4段階で変更可能
-- 長い4択を2〜3行で表示できる可変高ボタンへ変更
-- 狭幅スマートフォン、横長スマートフォン、タブレット、可変macOSウィンドウへ対応
-- 全語の学習回数に応じた周回表示を追加。2〜4周目は専用配色、5周目以降は周回数のみ表示
+## v2.1.0の変更点
 
-アップデート時に既存の自作単語帳や旧標準単語帳を自動削除することはありません。v2標準単語帳は追加され、新規インストール時の標準構成だけが17冊になります。
+- 学習画面の配置を「上寄せ」（v2.0.0からの既定）と「均等配置」（v1.2.1以前の挙動）から選べる設定を追加（Android / macOS共通）
+- Androidで範囲・タグ指定を有効にしている間、指定範囲だけの学習済・うろ覚え・要復習バーを単語帳本体のバーの下へ追加表示（シンプルモードでも表示）
+- 誤ってデバッグ鍵で公開されていたv2.0.0 APKから、v1.1.1までと同じ正規アップロード鍵での署名に復帰
 
-詳細は [v2.0.0リリースノート](RELEASE_NOTES_v2.0.0.md)、[設計書](DESIGN_DOC.md)、[検証レポート](docs/STATIC_ANALYSIS_REPORT_v2.0.0.md) を参照してください。
+詳細は [v2.1.0リリースノート](RELEASE_NOTES_v2.1.0.md)、[設計書](DESIGN_DOC.md)、[検証レポート](docs/STATIC_ANALYSIS_REPORT_v2.1.0.md) を参照してください。
 
 ## 主な機能
 
@@ -70,7 +66,7 @@ JDK 17以上とAndroid SDKが必要です。
 ./gradlew stageReleaseApk
 ```
 
-署名環境変数を指定した配布APKは `dist-android/Tango-pro-2.0.0-android.apk` に生成されます。署名証明書が異なるインストールには上書きできません。
+署名環境変数を指定した配布APKは `dist-android/Tango-pro-2.1.0-android.apk` に生成されます。署名証明書が異なるインストールには上書きできません。
 
 ## macOSでビルド
 
@@ -92,11 +88,10 @@ macos/package_dmg.sh
 - [開発・検証手順](docs/DEVELOPMENT.md)
 - [CSV形式仕様](docs/CSV_FORMAT.md)
 - [学習記録ZIP形式仕様](docs/STUDY_ARCHIVE_FORMAT.md)
-- [v2.0.0 静的解析・テストレポート](docs/STATIC_ANALYSIS_REPORT_v2.0.0.md)
-- [v2.0.0 紹介サイトQA](docs/SITE_QA_v2.0.0.md)
-- [v2.0.0 リリースノート](RELEASE_NOTES_v2.0.0.md)
+- [v2.1.0 静的解析・テストレポート](docs/STATIC_ANALYSIS_REPORT_v2.1.0.md)
+- [v2.1.0 リリースノート](RELEASE_NOTES_v2.1.0.md)
 - [リリースチェックリスト](docs/RELEASE_CHECKLIST.md)
-- [成果物SHA-256](CHECKSUMS_v2.0.0.txt)
+- [成果物SHA-256](CHECKSUMS_v2.1.0.txt)
 
 ## ライセンス
 

@@ -1,7 +1,13 @@
 # Tango pro v2.1.0
 
 > [!WARNING]
-> Android版は既公開版と互換の署名証明書、macOS版はad-hoc署名・未Notarizeです。更新前に学習記録ZIPを保存してください。
+> macOS版はad-hoc署名・未Notarizeです。更新前に学習記録ZIPを保存してください。
+
+> [!IMPORTANT]
+> **Android署名鍵に関する重要なお知らせ**: 公開中のv2.0.0 APK（GitHub Release）は、本来の正規リリース鍵ではなく誤ってデバッグ鍵で署名された状態で公開されていました。v2.1.0はv1.1.1までと同じ正規のアップロード鍵で署名し、正しい署名系列に復帰しています。
+>
+> - v1.1.1以前から更新する場合、または新規インストールの場合は、通常どおり上書き更新・新規インストールできます。
+> - **GitHub Releaseのv2.0.0 APKを実際にインストールしている場合のみ**、署名証明書の不一致によりv2.1.0への上書き更新ができません。設定画面から学習記録ZIPを書き出してから、v2.0.0をアンインストールし、v2.1.0を新規インストールしてください。
 
 ## 学習画面の配置モード
 
@@ -22,10 +28,18 @@
 - macOS保存形式version 1、学習記録ZIP format version 1を維持
 - 配置モードはアプリ共通設定として後方互換のある任意値で保存し、未知の値は既定へ安全に移行
 
+## 配布物
+
+- `Tango-pro-2.1.0-android.apk`: 正規アップロード鍵（v1.1.1までと同一証明書）で署名したrelease build
+- `Tango-pro-2.1.0-universal.dmg`: Apple Silicon / Intel対応、ad-hoc署名、未Notarize
+- `CHECKSUMS_v2.1.0.txt`: SHA-256
+
 ## 確認済み項目
 
-- Android unit test（配置モードの正規化を追加）
+- Android unit test 全件（配置モードの正規化を追加）、lint 0 errors
+- Android / macOS の相互fixture互換性（`run_cross_platform_tests.sh`）
 - macOS Core self-test
-- Android / macOS build、署名、成果物整合性
+- Android release APKの署名証明書がv1.1.1と同一であることを`apksigner verify`で確認
+- Android / macOS build、成果物整合性（SHA-256）
 
-正式配布へ移行する場合は、Android正式署名鍵での更新インストール、実端末TTS、macOS Developer ID署名・Notarizationを別途確認してください。
+正式配布へ移行する場合は、実端末でのインストール・TTS動作確認、macOS Developer ID署名・Notarizationを別途行ってください。
