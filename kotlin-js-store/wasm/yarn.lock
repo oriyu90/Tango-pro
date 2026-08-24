@@ -12,7 +12,7 @@
   resolved "https://registry.yarnpkg.com/@sqlite.org/sqlite-wasm/-/sqlite-wasm-3.53.0-build1.tgz#066cab9189973c39edbb7078c55bb4daa1cd2d30"
   integrity sha512-PfWPWN2n+/37doa8oh2/oUXk4OOsRYZsxc1W1sDXIGb/Pu5Yrb+f2eyYpgQMGITVX7HVgxhs9P18Rc6I97ym/g==
 
-"tango-pro-sqlite-wasm-worker@file:../../../../../../../../../Users/yuki/適当フォルダ/Tango-pro/sqliteWasmWorker/worker":
+"tango-pro-sqlite-wasm-worker@file:local-packages/tango-pro-sqlite-wasm-worker":
   version "0.0.0"
   dependencies:
     "@sqlite.org/sqlite-wasm" "3.53.0-build1"

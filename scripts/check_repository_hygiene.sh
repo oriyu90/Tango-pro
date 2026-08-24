@@ -17,5 +17,10 @@ if git grep -nE -e '-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----' -- ':!scrip
   exit 1
 fi
 
+if git grep -nE -e 'file:(/|\.\./)+Users/[^/]+' -- 'kotlin-js-store/**'; then
+  echo 'A developer-specific absolute path was written to a tracked Yarn lockfile.' >&2
+  exit 1
+fi
+
 git diff --check
 echo 'Repository hygiene: PASS'
