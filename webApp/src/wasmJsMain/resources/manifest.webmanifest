@@ -1,0 +1,15 @@
+{
+  "id": "/projects/tango-pro/web/",
+  "name": "Tango pro",
+  "short_name": "Tango pro",
+  "description": "CSV単語帳を4択・タイピング・読み上げで学習できます。",
+  "lang": "ja",
+  "start_url": "/projects/tango-pro/web/",
+  "scope": "/projects/tango-pro/web/",
+  "display": "standalone",
+  "theme_color": "#0e0d10",
+  "background_color": "#0e0d10",
+  "icons": [
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

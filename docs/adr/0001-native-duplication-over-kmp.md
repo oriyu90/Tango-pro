@@ -1,6 +1,6 @@
 # ADR 0001: Prefer native duplication over Kotlin Multiplatform
 
-- Status: Accepted
+- Status: Superseded by ADR 0002
 - Date: 2026-08-18
 
 ## Context

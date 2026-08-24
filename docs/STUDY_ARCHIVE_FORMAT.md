@@ -1,6 +1,6 @@
 # 学習記録ZIP形式仕様
 
-Tango pro v1.2.0で導入し、v1.2.1でフランス語・ポルトガル語metadataへ拡張したAndroid / macOS共通の移行形式である。v2.0.0でもformat version 1を維持する。
+Tango pro v1.2.0で導入し、v1.2.1でフランス語・ポルトガル語metadataへ拡張したWeb / Android / macOS共通の移行形式である。Web版追加後もformat version 1を維持する。
 
 ## 識別情報
 
@@ -125,7 +125,7 @@ groups/
 | entry | 重複、未知file、symlinkは禁止 |
 | integrity | manifestとprogress両方のSHA-256がCSVと一致すること |
 
-全entry、JSON、CSV、hash、行番号を検証してからデータを変更する。Androidは単一Room transactionで統合・追加し、macOSは一時状態で統合後にJSONをatomic writeする。失敗した場合は変更前の状態を維持する。
+全entry、JSON、CSV、hash、行番号を検証してからデータを変更する。WebとAndroidは単一Room transactionで統合・追加し、macOSは一時状態で統合後にJSONをatomic writeする。失敗した場合は変更前の状態を維持する。
 
 ## 互換性方針
 

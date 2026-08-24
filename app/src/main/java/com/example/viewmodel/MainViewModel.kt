@@ -715,12 +715,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         onComplete(false, "グループの作成に失敗しました。")
                     }
                 }
+            } catch (e: OutOfMemoryError) {
+                Log.e("TangoPro", "CSV file import exceeded available memory", e)
+                withContext(Dispatchers.Main) {
+                    isImporting = false
+                    onComplete(false, "ファイルが大きすぎます")
+                }
             } catch (e: Exception) {
                 Log.e("TangoPro", "CSV file import failed", e)
                 val errorMessage = when (e) {
                     is java.io.IOException -> "ファイル読み込みエラー: ${e.localizedMessage}"
                     is java.lang.IllegalArgumentException -> "無効なCSV形式: ${e.localizedMessage}"
-                    is java.lang.OutOfMemoryError -> "ファイルが大きすぎます"
                     else -> "エラー: ${e.localizedMessage ?: "読み込み失敗"}"
                 }
                 withContext(Dispatchers.Main) {

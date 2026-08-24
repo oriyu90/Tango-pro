@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
-公開前の変更はここへ追記する。
+- Web版のフォーム、設定、学習操作にアクセシブル名と状態説明を追加し、キーボード／支援技術から識別しやすくした。
+- Kotlin/Wasm + Compose MultiplatformによるWeb版を追加
+- Room 3、AndroidX SQLite Web、SQLite Wasm / OPFSによるローカル永続化を追加
+- Web / Android間で回答正規化・学習状態・CSV・組み込み17冊の共通KMP coreを導入
+- PWA、完全オフラインprecache、単一writerタブlock、Web Speech / Web Audio、CSV・学習記録ZIP入出力を追加
+- Studio Riziの `/projects/tango-pro/web/` へ安全にstage・検証するスクリプトを追加
 
 ## [2.1.0] - 2026-08-22
 

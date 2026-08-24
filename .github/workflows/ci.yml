@@ -44,3 +44,6 @@ jobs:
 
       - name: Build and run cross-platform tests
         run: bash scripts/run_cross_platform_tests.sh
+
+      - name: Build and run Web tests
+        run: bash scripts/run_web_tests.sh

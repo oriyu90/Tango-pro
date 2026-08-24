@@ -2,7 +2,7 @@
 
 ## 1. 目的と対象
 
-Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのAndroid / macOSアプリである。本書はv2.1.0の実装を正とし、データ構造、責務、レスポンシブ表示、失敗時の扱い、互換性を定義する。
+Tango proは、CSV単語帳を取り込んで反復学習するローカルファーストのWeb / Android / macOSアプリである。本書はv2.1.0とWeb版の実装を正とし、データ構造、責務、レスポンシブ表示、失敗時の扱い、互換性を定義する。
 
 設計原則は次のとおり。
 
@@ -14,14 +14,14 @@ Tango proは、CSV単語帳を取り込んで反復学習するローカルフ�
 
 ## 2. 対応環境とバージョン
 
-| 項目 | Android | macOS |
-| --- | --- | --- |
-| アプリ版 | 2.1.0 | 2.1.0 |
-| ビルド番号 | 7 | 7 |
-| 最低OS | API 24 | macOS 13 |
-| 対象SDK | API 36 | macOS SDK |
-| UI | Jetpack Compose / Material 3 | SwiftUI |
-| 永続化 | Room SQLite + SharedPreferences | JSONファイル（atomic write） |
+| 項目 | Web | Android | macOS |
+| --- | --- | --- | --- |
+| アプリ版 | 2.1.0-web | 2.1.0 | 2.1.0 |
+| ビルド番号 | content build ID | 7 | 7 |
+| 最低環境 | Chrome / Edge現行安定版 | API 24 | macOS 13 |
+| 対象SDK | Kotlin/WasmGC browser | API 36 | macOS SDK |
+| UI | Compose Multiplatform / Material 3 | Jetpack Compose / Material 3 | SwiftUI |
+| 永続化 | Room 3 + SQLite Wasm / OPFS、localStorage | Room 2 SQLite + SharedPreferences | JSONファイル（atomic write） |
 
 AndroidのapplicationIdは既存ユーザーの更新互換性を守るため `com.aistudio.vocabstudier.xwqnzy` を維持する。コードnamespaceは現状 `com.example` であり、変更には移行作業が必要なためv2.0.0では維持する。
 
@@ -73,6 +73,21 @@ MainActivity
 - `StudyArchiveService`: Room snapshot exportとtransaction import、完全一致判定、統合
 - `StudySettingsPreferences`: Androidの単語帳ID別出題設定と旧共通設定の移行
 
+### Android / Web共有境界
+
+ADR 0002に基づき、`shared` KMP moduleでplatform-neutralなmodel、学習状態・周回・出題条件・4択生成・回答正規化、逐次CSV codec、組み込み17冊catalogをAndroidとWebで共有する。既存Android Room 2 entity / DAO / migrationは変更せず、Webは`webApp`内のRoom 3 entity / DAOを使用する。Androidの既存`AnswerNormalizer`はshared実装へ委譲し、段階的共通化が実際のAndroid buildで検証される状態を維持する。
+
+Web固有層は次の責務を持つ。
+
+- `WebAppState` / `WebApp`: Compose UI、単語帳別出題設定、session状態
+- `WebRepository`: Room 3 transaction、Flow、17冊投入、CSV、成績更新、archive merge
+- `WebArchiveService`: format version 1、path / entry / hash / row / language検証
+- `BrowserPlatform` / `browser-bridge.js`: picker、download / share、Web Speech、Web Audio、Web Locks、永続storage要求
+- `sqliteWasmWorker`: AndroidX `WebWorkerSQLiteDriver`とSQLite Wasm OPFS VFSのprotocol adapter
+- `sw.js`: build ID単位のapp asset precache。Cache Storageだけを更新しOPFSとlocalStorageは変更しない
+
+CSVと学習記録ZIPだけを3版のportable persistence contractとする。OPFS DB、Android DB、macOS JSONを直接交換しない。
+
 ## 4. Androidデータモデル
 
 ### study_groups
@@ -109,7 +124,7 @@ MainActivity
 | うろ覚え | `studyCount == 1 && isCorrectLast` |
 | 未学習／要復習 | 上記以外 |
 
-不正解の初回回答は「うろ覚え」ではなく「要復習」である。Androidは `StudyProgress`、macOSは同じ条件のcomputed logicを使用する。
+不正解の初回回答は「うろ覚え」ではなく「要復習」である。Web / Androidはshared `StudyProgress`、macOSは同じ条件のcomputed logicを使用する。
 
 回答確定時は、読み出したWordを上書き保存せず次のSQLを実行する。
 
@@ -185,7 +200,7 @@ Androidは安定IDごとのSharedPreferencesキーで冊子単位の投入完了
 
 ## 8. 複数レコード操作
 
-- CSVインポート: 解析完了後、groupとwordsをRoom transactionで登録
+- CSVインポート: Web / Androidは解析完了後、groupとwordsをRoom transactionで登録
 - グループ連結: 対象取得後、新groupと複製wordsをRoom transactionで登録
 - セーブデータ復元: version検証後、全groupをRoom transactionでmergeまたは追加
 - グループ削除: wordsとgroupをDAO transactionで削除
@@ -220,9 +235,9 @@ groups/group-0001/progress.json
 
 ## 10. 設定とバックアップ
 
-AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。テーマ・TTS・音量・効果音・シンプルモード・問題文字倍率・問題画面の配置モードはアプリ共通、出題設定は単語帳ID別である。音量は0.0〜1.0、問題数と文字倍率は有効候補へ丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
+AndroidのUI設定はSharedPreferences、単語帳と成績はRoomに保存する。WebのUI設定はorigin単位のlocalStorage、単語帳と成績はOPFS Room databaseに保存する。テーマ・TTS・音量・効果音・シンプルモード・問題文字倍率・問題画面の配置モードはアプリ共通、出題設定は単語帳ID別である。音量は0.0〜1.0、問題数と文字倍率は有効候補へ丸め、壊れた設定値をCompose Sliderや `take()` に渡さない。
 
-シンプルモードでも選択中カードと学習開始ボタンは常時表示する。進捗は1回以上学習した語の割合をバーと%吹き出しで表し、出題設定は初期状態を閉じたDisclosure表示とする。通常モードは従来の3状態別件数・割合を維持する。範囲・タグ指定（`useRangeConstraint`）を有効にしている間は、単語帳本体の進捗カードの直下に、絞り込んだ範囲だけの学習済・うろ覚え・要復習の内訳カードを追加表示する。この範囲別カードはシンプルモードでも常に表示する。範囲指定はAndroid限定機能であり、macOSには存在しないため範囲別カードもAndroidのみに実装する。
+シンプルモードでも選択中カードと学習開始ボタンは常時表示する。進捗は1回以上学習した語の割合をバーと%で表し、出題設定は初期状態を閉じたDisclosure表示とする。通常モードは従来の3状態別件数・割合を維持する。範囲・タグ指定はWeb / Androidで利用できる。Androidは`useRangeConstraint`有効時に絞り込んだ範囲だけの3状態内訳カードも追加表示する。macOSには範囲指定と範囲別カードを実装しない。
 
 Androidダッシュボードは680dp未満を狭幅として折返しを優先し、本文最大幅を1,000dpに制限する。学習画面は幅720dp以上かつ横長の場合に問題／回答の2ペイン、それ以外は縦積みスクロールとする。縦積み時の配置は設定の「問題画面の配置」で切り替える。「上寄せ」（既定、v2.0.0からの挙動）は内容を自然な高さで上から詰めてスクロール表示し、内容が短いと下部に余白が生まれる。「均等配置」（v1.2.1以前の挙動）は問題カードに`weight(1f)`を与えて残りの縦空間を埋め、回答欄を画面下部に固定する。この設定はAndroidの `quizArrangementMode`（SharedPreferences、既定値 `top_aligned`）で保存し、単語帳をまたいでアプリ共通で適用する。
 
@@ -248,6 +263,8 @@ Androidの標準検証は `./gradlew test lint stageReleaseApk`。`stageReleaseA
 
 macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMGを作る。ローカル候補はad-hoc署名であり、公開時はDeveloper ID署名、Notarization、Gatekeeper確認が必要である。
 
+Webは`bash scripts/run_web_tests.sh`でshared / archive / Room repository testとproduction buildを行う。`scripts/stage_web_for_pages.sh`がStudio Riziの`website/projects/tango-pro/web/`へsource mapを除いて同期し、content build ID、asset list、source commitを`build-info.json`へ固定する。公開pathは`/projects/tango-pro/web/`から変更しない。
+
 詳細な手順と公開前チェックは [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) を参照する。
 
 ## 13. 既知の保留事項
@@ -255,4 +272,5 @@ macOSは `macos/build_macos.sh` でuniversal app、`macos/package_dmg.sh` でDMG
 - Androidのnamespace `com.example` は既存コード由来。applicationIdを変えずに段階的移行する計画が必要
 - AndroidとmacOSの従来JSON形式は共通ではないが、v1.2.0以降は学習記録ZIPを共通形式とする
 - Release署名・macOS Notarizationはローカル検証の範囲外
+- WebのTier 1はChrome / Edge。Firefox / SafariのOPFS互換は正式保証外
 - 依存関係の一括更新は回帰範囲が大きいためv2.0.0では行わず、別版で段階的に実施する

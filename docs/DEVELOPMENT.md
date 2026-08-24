@@ -8,16 +8,23 @@
 
 ## 一括検証
 
-リポジトリ衛生、バージョン同期、サイト構造、Android/macOSの双方向互換性を次の順で確認する。
+リポジトリ衛生、バージョン同期、サイト構造、Web/Android/macOSのテストと双方向互換性を次の順で確認する。
 
 ```bash
 bash scripts/check_repository_hygiene.sh
 bash scripts/check_version_lockstep.sh
 python3 scripts/check_site.py
 bash scripts/run_cross_platform_tests.sh
+bash scripts/run_web_tests.sh
 ```
 
-`run_cross_platform_tests.sh`はAndroidのテスト・lint・debug/release build、macOS Core self-test、一時fixtureによるAndroid→macOS→Androidの読み書き、`testdata/fixtures/`に保存した過去fixtureの読込を実行する。CIも同じスクリプトを使用する。
+`run_cross_platform_tests.sh`はAndroidのテスト・lint・debug/release build、macOS Core self-test、一時fixtureによるAndroid→macOS→Androidの読み書き、`testdata/fixtures/`に保存した過去fixtureの読込を実行する。`run_web_tests.sh`は共有KMPテスト、ブラウザ上のRoom/アーカイブ契約テスト、本番WebAssemblyビルドを実行する。CIも両方のスクリプトを使用する。
+
+Web版は追加で次を実行する。詳細は [WEB_DEVELOPMENT.md](WEB_DEVELOPMENT.md) を参照する。
+
+```bash
+bash scripts/run_web_tests.sh
+```
 
 ## Android
 
@@ -36,7 +43,7 @@ bash scripts/run_cross_platform_tests.sh
 ./gradlew stageReleaseApk
 ```
 
-`dist-android/Tango-pro-2.0.0-android.apk` が生成されます。署名環境変数がない状態では公開用APKを作成しないでください。
+`dist-android/Tango-pro-2.1.0-android.apk` が生成されます。署名環境変数がない状態では公開用APKを作成しないでください。
 
 ### 正式署名
 
@@ -49,7 +56,7 @@ KEY_ALIAS=...
 KEY_PASSWORD=...
 ```
 
-署名後は `apksigner verify --verbose --print-certs` で署名者を過去版と照合し、`aapt dump badging` または端末のpackage情報でversionCode 6 / versionName 2.0.0を確認します。
+署名後は `apksigner verify --verbose --print-certs` で署名者を過去版と照合し、`aapt dump badging` または端末のpackage情報でversionCode 7 / versionName 2.1.0を確認します。
 
 ### 起動スモークテスト
 
@@ -92,13 +99,13 @@ swiftc -swift-version 5 -sdk "$sdk_path" \
 Androidで書き出した実ZIPをmacOSへ、macOS fixtureをAndroidへ渡す双方向確認も行う。
 
 ```bash
-TANGO_ANDROID_FIXTURE_OUTPUT=/tmp/Tango-pro-android-v2.0.0.zip \
+TANGO_ANDROID_FIXTURE_OUTPUT=/tmp/Tango-pro-android-v2.1.0.zip \
   ./gradlew testDebugUnitTest \
   --tests 'com.example.StudyArchiveCodecTest.producer output can be parsed again'
 /tmp/tango-core-self-test \
-  --android-fixture /tmp/Tango-pro-android-v2.0.0.zip \
-  --write-fixture /tmp/Tango-pro-macos-v2.0.0.zip
-TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v2.0.0.zip \
+  --android-fixture /tmp/Tango-pro-android-v2.1.0.zip \
+  --write-fixture /tmp/Tango-pro-macos-v2.1.0.zip
+TANGO_ARCHIVE_FIXTURE=/tmp/Tango-pro-macos-v2.1.0.zip \
   ./gradlew testDebugUnitTest \
   --tests 'com.example.StudyArchiveCodecTest.macOS archive fixture is Android compatible when supplied'
 ```
@@ -139,6 +146,8 @@ macos/package_dmg.sh
 - [ ] macOS appをDeveloper ID署名しNotarization済み
 - [ ] バックアップ復元とCSV round-tripを確認
 - [ ] Android↔macOSの学習記録ZIP相互importを確認
+- [ ] Web / Android / macOSの学習記録ZIP相互importを確認
+- [ ] Web production distribution、OPFS永続化、オフライン、2タブlock、Studio Rizi検証が成功
 - [ ] ZIP改ざん、危険path、CSV不一致、学習済み優先のテストが成功
 - [ ] Release notesとSHA-256を確定
 - [ ] Git差分に鍵、`local.properties`、生成物、一時ファイルがない

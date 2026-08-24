@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/oriyu90/Tango-pro/actions/workflows/ci.yml)
 
-CSVで作った単語帳を取り込み、4択またはタイピングで学習するAndroid / macOS向けアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定履歴、学習履歴、CSV共有、学習記録ZIPの相互移行に対応します。
+CSVで作った単語帳を取り込み、4択またはタイピングで学習するWeb / Android / macOSアプリです。英語・中国語・フランス語・ポルトガル語の読み上げ、単語帳別の出題設定、学習履歴、CSV共有、学習記録ZIPの相互移行に対応します。
 
-[公式紹介サイト](https://studio-rizi.pages.dev/projects/tango-pro/) · [v2.1.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.1.0)
+[Web版を開く](https://studio-rizi.pages.dev/projects/tango-pro/web/) · [公式紹介サイト](https://studio-rizi.pages.dev/projects/tango-pro/) · [v2.1.0をダウンロード](https://github.com/oriyu90/Tango-pro/releases/tag/v2.1.0)
 
 > [!WARNING]
 > macOS DMG内のアプリはad-hoc署名・未Notarizeです。更新や移行の前に、設定画面から学習記録ZIPを保存してください。
@@ -28,7 +28,7 @@ CSVで作った単語帳を取り込み、4択またはタイピングで学習�
 - シンプル／通常表示、ライト／ダークテーマ、問題・4択文字サイズ変更
 - TTS読み上げ、音量調整、正誤効果音
 - 単語帳の編集、並べ替え、連結、進捗リセット、削除、CSV共有
-- Android / macOS間で利用できる学習記録ZIP、Android従来JSONバックアップ
+- Web / Android / macOS間で利用できる学習記録ZIP、Android従来JSONバックアップ
 
 ## 周回表示
 
@@ -79,6 +79,17 @@ macos/package_dmg.sh
 
 ローカルビルドはuniversal binaryのad-hoc署名です。正式配布時はDeveloper ID署名とNotarizationが必要です。
 
+## Web版をビルド
+
+JDK 17以上とChrome系ブラウザが必要です。Web版はKotlin/Wasm、Compose Multiplatform、Room 3、SQLite Wasm / OPFSで動作します。
+
+```bash
+bash scripts/run_web_tests.sh
+bash scripts/stage_web_for_pages.sh /absolute/path/to/studio-rizi/website/projects/tango-pro/web
+```
+
+公開bundle、Cloudflare Pages header、オフライン／複数タブ検証は [Web開発手順](docs/WEB_DEVELOPMENT.md) を参照してください。
+
 ## 開発資料
 
 - [リポジトリガイド](AGENTS.md)
@@ -86,6 +97,7 @@ macos/package_dmg.sh
 - [ドキュメント索引](docs/README.md)
 - [設計書](DESIGN_DOC.md)
 - [開発・検証手順](docs/DEVELOPMENT.md)
+- [Web開発手順](docs/WEB_DEVELOPMENT.md)
 - [CSV形式仕様](docs/CSV_FORMAT.md)
 - [学習記録ZIP形式仕様](docs/STUDY_ARCHIVE_FORMAT.md)
 - [v2.1.0 静的解析・テストレポート](docs/STATIC_ANALYSIS_REPORT_v2.1.0.md)

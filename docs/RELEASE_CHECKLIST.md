@@ -32,6 +32,17 @@ Tango proをGitHubへ公開するときの確認事項です。生成物はGit�
 - [ ] 標準カタログ世代1→2の移行と、削除済み冊子を再生成しないことを確認する
 - [ ] 680×500、横長ウィンドウ、文字サイズ4段階を確認する
 
+## Web / Cloudflare Pages
+
+- [ ] `bash scripts/run_web_tests.sh` が成功する
+- [ ] `stage_web_for_pages.sh`で生成した`build-info.json`とService Workerのbuild IDが一致する
+- [ ] 17冊初期化、CSV・ZIP、4択・タイピング、TTS、再読込後のOPFS永続化を確認する
+- [ ] 2タブ目がDBを開かず案内画面になる
+- [ ] 390px狭幅、960×480横長、ライト／ダーク、シンプルモードを確認する
+- [ ] 完全オフライン再起動とService Worker更新後の学習記録保持を確認する
+- [ ] Studio Riziで`npm run build`、`npm run validate`、`npm run count-files`が成功する
+- [ ] 本番のHTML / JS / Wasmが200で、Wasm MIME、COOP、COEP、`crossOriginIsolated`が正しい
+
 ## GitHub
 
 - [ ] commitをpushする

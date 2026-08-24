@@ -15,6 +15,11 @@ This software is provided “AS IS”, without warranty of any kind, express or 
 本アプリは次のオープンソースライブラリを利用しており、それぞれのライセンスが適用されます。
 
 - Android Jetpack、Jetpack Compose、Material Design 3、Room — Apache License 2.0、The Android Open Source Project / Google LLC
-- Kotlin Standard Library、Coroutines、Serialization — Apache License 2.0、JetBrains s.r.o.およびKotlin Project contributors
+- Compose Multiplatform、Kotlin Standard Library、Coroutines、Serialization — Apache License 2.0、JetBrains s.r.o.およびKotlin Project contributors
+- Room 3、AndroidX SQLite WebおよびSQLite Web Worker参照実装 — Apache License 2.0、The Android Open Source Project
+- SQLite Wasm (`@sqlite.org/sqlite-wasm`) — SQLite Public Domain dedication
+- Noto Sans SC — SIL Open Font License 1.1、Adobe / Noto contributors。ライセンス全文は `webApp/src/commonMain/composeResources/font/OFL.txt`
+
+`sqliteWasmWorker/worker/worker.js` はAndroidXのWeb Worker test implementationを基に、OPFS検査、エラー処理、テスト用in-memory接続を加えています。ファイル先頭のApache License 2.0表示を参照してください。
 
 依存関係の正確なバージョンは `gradle/libs.versions.toml` を参照してください。
