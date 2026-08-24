@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "runtimeVersion": "0.1.0-dev",
+  "guest": {
+    "androidApi": 35,
+    "architecture": "x86_64",
+    "ramMb": 1536,
+    "cpuCount": 2
+  },
+  "graphics": {
+    "default": "auto",
+    "fallback": "software"
+  }
+}

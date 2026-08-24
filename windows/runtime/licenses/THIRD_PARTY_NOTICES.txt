@@ -1,0 +1,1 @@
+This is a release-time placeholder. Populate it from the audited final runtime component inventory before any distribution.

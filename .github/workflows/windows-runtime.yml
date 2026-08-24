@@ -1,0 +1,23 @@
+name: Windows runtime build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require an audited runtime manifest
+        shell: pwsh
+        run: |
+          $components = Get-Content windows/runtime/components.lock.json -Raw | ConvertFrom-Json
+          if ($null -eq $components.aemu -or $null -eq $components.adb -or $null -eq $components.guestImage) {
+            throw 'Production runtime components are not pinned. A PoC SDK image must not be packaged.'
+          }
+          if ((Get-Content windows/runtime/licenses/SOURCE_COMPONENTS.json -Raw | ConvertFrom-Json).status -ne 'approved') {
+            throw 'License audit is not approved.'
+          }

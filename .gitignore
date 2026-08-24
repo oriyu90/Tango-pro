@@ -33,7 +33,14 @@ DerivedData/
 dist/
 dist-android/
 dist-macos/
+dist-windows/
 tmp/
+
+# Local Windows Runtime PoC state
+windows/.local-sdk/
+windows/.local-avd/
+windows/.local-runtime/
+windows/launcher/target/
 
 # Local files retained during the v1.1.2 source cleanup
 .local-archive/

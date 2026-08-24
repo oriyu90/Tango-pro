@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "aemu": null,
+  "scrcpy": {
+    "version": "4.1",
+    "sourceCommit": "2926c06",
+    "patchLevel": 0,
+    "sha256": null
+  },
+  "adb": null,
+  "guestImage": null
+}
