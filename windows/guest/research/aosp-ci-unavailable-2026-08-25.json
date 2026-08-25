@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "provider": "Android CI public dashboard",
+  "checkedAt": "2026-08-25",
+  "requested": {
+    "androidVersion": "15",
+    "apiLevel": 35,
+    "target": "sdk_phone_x86_64",
+    "variant": "userdebug",
+    "architecture": "x86_64"
+  },
+  "result": "blocked",
+  "reason": "The requested sdk_phone_x86_64 target was retired upstream before Android 15. The public dashboard did not expose an Android 15 build with that target, so a build pin and artifact inventory cannot be recorded without guessing.",
+  "dashboard": {
+    "checkedBranch": "aosp-android-latest-release",
+    "observedTargets": [
+      "aosp_cf_arm64_auto-userdebug",
+      "aosp_cf_arm64_only_phone-userdebug",
+      "aosp_cf_riscv64_phone-userdebug",
+      "aosp_cf_x86_64_auto-userdebug",
+      "aosp_cf_x86_64_only_phone-userdebug"
+    ],
+    "unavailableBranches": [
+      "android15-release",
+      "aosp-android15-release"
+    ]
+  },
+  "upstreamEvidence": {
+    "commit": "4bf479f6057ad532c792e26d3d958a8b50fc1f02",
+    "url": "https://android.googlesource.com/platform/build/+/4bf479f6057ad532c792e26d3d958a8b50fc1f02",
+    "summary": "Retire obsolete emulator targets and boards; sdk_phone* targets are replaced with sdk_phone64*."
+  },
+  "artifacts": []
+}

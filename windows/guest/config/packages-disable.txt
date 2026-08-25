@@ -1,0 +1,2 @@
+# Intentionally empty until package names are recorded from the candidate guest.
+# Do not disable Android core components or modify system.sfs.

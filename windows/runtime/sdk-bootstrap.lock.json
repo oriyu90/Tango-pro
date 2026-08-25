@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "runtimeVersion": "2.1.0-sdk-first-run-1",
+  "commandLineTools": {
+    "version": "15859902",
+    "sourceUrl": "https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip",
+    "sha256": "90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a",
+    "downloadedDirectlyByUser": true
+  },
+  "packages": {
+    "emulator": {
+      "id": "emulator",
+      "revision": "37.1.11"
+    },
+    "platformTools": {
+      "id": "platform-tools",
+      "revision": "37.0.1"
+    },
+    "buildTools": {
+      "id": "build-tools;36.0.0",
+      "revision": "36.0.0"
+    },
+    "systemImage": {
+      "id": "system-images;android-35;default;x86_64",
+      "revision": "2",
+      "androidApi": 35,
+      "abi": "x86_64",
+      "tag": "default"
+    }
+  },
+  "storageBudget": {
+    "basis": "2026-08-25 local API35 x86_64 PoC measured installed component sizes plus conservative temporary and AVD allocations",
+    "commandLineToolsArchiveBytes": 163263283,
+    "commandLineToolsExtractedBytes": 179901603,
+    "sdkInstalledBytes": 3021353006,
+    "avdUserdataBytes": 2147483648,
+    "temporaryBytes": 3021353006,
+    "safetyMarginBytes": 1073741824,
+    "minimumFreshInstallFreeBytes": 9607096370,
+    "minimumAvdRepairFreeBytes": 3221225472
+  },
+  "avd": {
+    "name": "TangoPro_API35_x86_64",
+    "deviceProfile": "pixel_2",
+    "ramMb": 1536,
+    "cpuCount": 2,
+    "gpu": "auto",
+    "snapshotsEnabled": false
+  }
+}

@@ -33,7 +33,23 @@ DerivedData/
 dist/
 dist-android/
 dist-macos/
+dist-windows/
 tmp/
+
+# Local Windows Runtime PoC state
+windows/.local-sdk/
+windows/.local-avd/
+windows/.local-runtime/
+windows/.local-guest/
+windows/.local-qemu/
+windows/launcher/target/
+
+# Downloaded or generated prebuilt guest/runtime artifacts
+*.iso
+*.img
+*.qcow2
+*.sfs
+*.zst
 
 # Local files retained during the v1.1.2 source cleanup
 .local-archive/

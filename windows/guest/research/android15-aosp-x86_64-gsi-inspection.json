@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "candidate": "android15-aosp-x86-64-gsi-initial",
+  "archive": {
+    "name": "aosp_x86_64-exp-AP3A.241005.015-12366759-96716f9b.zip",
+    "sha256": "96716f9bff890f7336274b8bc80b3dd816b3571f881beffbfe91800ee41300f9",
+    "source": "Android Developers official delivery",
+    "entries": [
+      { "name": "build.prop", "size": 4563 },
+      { "name": "system.img", "size": 2029531136 },
+      { "name": "vbmeta.img", "size": 4096 }
+    ]
+  },
+  "systemImage": {
+    "size": 2029531136,
+    "sha256": "06f332d8337a6c6639a4ecb5fc72902a92f221bc6d4966cb8aba693cca577829",
+    "format": "raw-ext4",
+    "evidence": "ext4 superblock magic 53EF at offset 0x438"
+  },
+  "compositionTest": {
+    "referenceImage": "API 35 default x86_64 SDK image copied to development-only stage",
+    "changedComponent": "system.img only",
+    "preservedComponents": ["AEMU", "kernel-ranchu", "ramdisk.img", "vendor.img", "encryptionkey.img", "AVD hardware config"],
+    "gsiVbmetaUsed": false,
+    "acceleration": "WHPX operational",
+    "graphics": "-gpu auto; SwiftShader fallback selected after unsupported host Vulkan",
+    "visibleLaunch": true,
+    "adbState": "offline for approximately four minutes",
+    "bootCompleted": false,
+    "result": "rejected-technical-gsi-pg1",
+    "reason": "The system-only overlay did not reach online ADB, SystemUI confirmation, or sys.boot_completed. No additional partition or vbmeta substitution was attempted because it exceeds the defined system.img-only composition."
+  },
+  "notRun": ["identity", "GMS audit", "ADB commands", "Tango", "TTS", "audio", "scrcpy", "persistence", "offline", "performance", "headless", "supervisor", "distribution licensing"]
+}

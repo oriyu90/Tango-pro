@@ -1,0 +1,13 @@
+{
+    "schema":  1,
+    "packageName":  "com.aistudio.vocabstudier.xwqnzy",
+    "namespace":  "com.example",
+    "versionName":  "2.1.0",
+    "versionCode":  7,
+    "minSdk":  24,
+    "targetSdk":  36,
+    "compileSdk":  "36.1",
+    "apk":  "../dist-android/Tango-pro-2.1.0-android-debug.apk",
+    "sha256":  "ef19c27dd613bbf09d14275078114c215c7208cba176b924aa4827ef6353a836",
+    "certificateSha256":  "8042e71f7c87e94a9e785d8de6c18bd8f5601ef22165defd9f7bd3a1e2995ead"
+}

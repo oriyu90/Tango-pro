@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "sdk-api35-poc",
+  "type": "sdk-aemu",
+  "status": "poc-only",
+  "purpose": "development-regression-reference",
+  "androidApi": 35,
+  "architecture": "x86_64"
+}
