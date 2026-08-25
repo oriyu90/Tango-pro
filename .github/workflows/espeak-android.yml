@@ -38,10 +38,13 @@ jobs:
     env:
       ESPEAK_REPOSITORY: https://github.com/espeak-ng/espeak-ng.git
       ESPEAK_COMMIT: 7d426728fe146f4168fa716e29d8e276c7da33f2
-      ESPEAK_WORKDIR: ${{ runner.temp }}/espeak-ng
-      GRADLE_USER_HOME: ${{ runner.temp }}/gradle-home
       ANDROID_SDK_LICENSES_TAR_GZ_B64: ${{ secrets.ANDROID_SDK_LICENSES_TAR_GZ_B64 }}
     steps:
+      - name: Initialize isolated build paths
+        shell: bash
+        run: |
+          echo "ESPEAK_WORKDIR=$RUNNER_TEMP/espeak-ng" >> "$GITHUB_ENV"
+          echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-home" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
