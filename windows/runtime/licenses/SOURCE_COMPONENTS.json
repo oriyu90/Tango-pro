@@ -1,5 +1,64 @@
 {
   "schema": 1,
   "status": "pending-final-runtime-audit",
-  "components": []
+  "components": [
+    {
+      "name": "Google Android SDK components",
+      "version": "sdk-bootstrap.lock.json",
+      "status": "downloaded-directly-by-user-license-required",
+      "distributedByTango": false,
+      "downloadedDirectlyByUser": true
+    },
+    {
+      "name": "QEMU",
+      "version": "11.1.0",
+      "status": "pending",
+      "distribution": false
+    },
+    {
+      "name": "Bliss OS 16.9.7 FOSS Generic",
+      "status": "rejected-technical-gates",
+      "distribution": false
+    },
+    {
+      "name": "Bliss OS 15.9.2 FOSS Generic",
+      "status": "rejected-technical-gates",
+      "distribution": false
+    },
+    {
+      "name": "Android 15 AOSP x86_64 GSI",
+      "version": "AP3A.241005.015",
+      "status": "rejected-technical-gsi-pg1",
+      "distribution": false
+    },
+    {
+      "name": "API 35 default x86_64 reference system image components",
+      "status": "poc-only-not-approved-for-redistribution",
+      "distribution": false
+    },
+    {
+      "name": "scrcpy",
+      "version": "4.1",
+      "status": "pending",
+      "distribution": false
+    },
+    {
+      "name": "ADB",
+      "status": "pending",
+      "distribution": false
+    },
+    {
+      "name": "eSpeak NG",
+      "version": "source 7d426728fe146f4168fa716e29d8e276c7da33f2; unsigned Linux CI build pending",
+      "status": "blocked-production-signing-and-gpl-audit",
+      "distribution": false,
+      "upstreamUrl": "https://github.com/espeak-ng/espeak-ng.git",
+      "sourceCommit": "7d426728fe146f4168fa716e29d8e276c7da33f2",
+      "patches": [],
+      "audit": "ESPEAK_NG_AUDIT.md",
+      "buildLock": "../espeak-android-build.lock.json",
+      "distributionPlan": "ESPEAK_NG_DISTRIBUTION_PLAN.md",
+      "signingRunbook": "ESPEAK_NG_SIGNING_RUNBOOK.md"
+    }
+  ]
 }

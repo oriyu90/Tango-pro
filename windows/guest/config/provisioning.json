@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "guestBackend": "prebuilt-qemu",
+  "guestInternet": false,
+  "packagesDisable": "packages-disable.txt",
+  "tangoPackage": "com.aistudio.vocabstudier.xwqnzy"
+}

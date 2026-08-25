@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "machine": "q35",
+  "acceleration": "whpx",
+  "cpu": "max",
+  "graphics": "virtio-vga",
+  "headless": false,
+  "guestLayout": "iso-root-system-efs",
+  "kernelArguments": ["root=/dev/ram0", "quiet", "nomodeset", "HWACCEL=0"]
+}

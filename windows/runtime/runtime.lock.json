@@ -1,6 +1,7 @@
 {
   "schema": 1,
-  "runtimeVersion": "0.1.0-dev",
+  "runtimeVersion": "2.1.0-sdk-first-run-1",
+  "guestBackend": "sdk-aemu",
   "guest": {
     "androidApi": 35,
     "architecture": "x86_64",
@@ -10,5 +11,11 @@
   "graphics": {
     "default": "auto",
     "fallback": "software"
+  },
+  "acquisition": {
+    "model": "official-sdk-first-run",
+    "androidSdk": "downloaded-directly-by-user",
+    "bundleGoogleAndroidSdk": false,
+    "automaticComponentUpgrade": false
   }
 }

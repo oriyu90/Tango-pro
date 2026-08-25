@@ -6,9 +6,11 @@ This directory will contain a dedicated Windows runtime that runs the existing T
 
 Repository audit, app metadata locking, and the API 35 x86_64 PoC are complete. Gate A (guest compatibility), Gate B (virtual/flex viewer display), Gate C (offline TTS in all four supported languages), and Gate D (headless emulator plus viewer) passed for the documented local PoC. `POC_REPORT.md` records the evidence and remaining release work.
 
-## Next prerequisite
+## Current implementation
 
-The next implementation phase is the Rust supervisor in `windows/launcher`. The PoC bootstrap script remains available for a clean, explicitly licensed developer setup.
+The Rust supervisor now implements an Official SDK First-Run path. It does not package Google Android SDK components. A user who elects setup downloads the locked official components into their own `%LOCALAPPDATA%\TangoPro\runtime\android-sdk` root and accepts the SDK terms themselves. See `ARCHITECTURE.md`, `DEVELOPMENT.md`, and `POC_REPORT.md` for the implementation boundary and gates that are still pending.
+
+Android Studio is not required. Internet access is required only for first-run component acquisition or runtime repair. The supported baseline is Windows 10 22H2 x64 with WHPX enabled; normal runtime operation uses the fixed API 35 default x86_64 AVD and does not auto-update its Google components.
 
 ## Metadata lock
 

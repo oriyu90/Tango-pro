@@ -22,14 +22,8 @@ pub fn start(paths: &Paths, job: &Job, port: u16) -> Result<Child> {
         &port.to_string(),
     ]);
     command.env("ANDROID_AVD_HOME", paths.avd_home());
-    command.env(
-        "ANDROID_HOME",
-        paths.install.join("runtime").join("android"),
-    );
-    command.env(
-        "ANDROID_SDK_ROOT",
-        paths.install.join("runtime").join("android"),
-    );
+    command.env("ANDROID_HOME", &paths.android_sdk_root);
+    command.env("ANDROID_SDK_ROOT", &paths.android_sdk_root);
     let stdout = File::create(paths.logs().join("emulator.stdout.log"))?;
     let stderr = File::create(paths.logs().join("emulator.stderr.log"))?;
     command

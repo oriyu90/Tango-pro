@@ -16,10 +16,10 @@ pub struct Adb {
 }
 
 impl Adb {
-    pub fn new(paths: &Paths, port: u16) -> Self {
+    pub fn new(paths: &Paths, serial: impl Into<String>) -> Self {
         Self {
             executable: paths.adb(),
-            serial: format!("emulator-{port}"),
+            serial: serial.into(),
         }
     }
 

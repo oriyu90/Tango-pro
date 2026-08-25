@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "component": "eSpeak NG Android unsigned release build",
+  "status": "ci-pending-not-approved-for-production",
+  "upstream": {
+    "repository": "https://github.com/espeak-ng/espeak-ng.git",
+    "commit": "7d426728fe146f4168fa716e29d8e276c7da33f2",
+    "commitTimestampUtc": "2026-08-19T12:23:56Z",
+    "license": "GPL-3.0-or-later"
+  },
+  "androidProject": {
+    "directory": "android",
+    "packageName": "com.reecedunn.espeak",
+    "versionName": "1.53.0",
+    "versionCode": 23,
+    "compileSdk": 34,
+    "minSdk": 21,
+    "targetSdk": 33,
+    "requiredAbi": "x86_64",
+    "requiredNativeLibrary": "lib/x86_64/libttsespeak.so",
+    "requiredVoiceDataArchive": "res/raw/espeakdata.zip"
+  },
+  "toolchain": {
+    "runner": "ubuntu-24.04",
+    "jdk": {
+      "distribution": "temurin",
+      "version": "17.0.12+7"
+    },
+    "gradleWrapper": {
+      "version": "9.6.1",
+      "distributionUrl": "https://services.gradle.org/distributions/gradle-9.6.1-bin.zip"
+    },
+    "androidGradlePlugin": "9.3.0",
+    "androidSdkPackages": {
+      "platform": "platforms;android-34",
+      "buildTools": "build-tools;34.0.0",
+      "ndk": "ndk;29.0.14206865",
+      "cmake": "cmake;3.22.1"
+    }
+  },
+  "build": {
+    "command": "cd android && ./gradlew --no-daemon --console=plain assembleRelease",
+    "expectedUnsignedApk": "android/build/outputs/apk/release/espeak-release-unsigned.apk",
+    "signing": "not-performed-in-this-workflow",
+    "reproducibilityRuns": 2
+  }
+}

@@ -3,7 +3,9 @@ param(
     [Parameter(Mandatory)]
     [string]$RuntimeBundle,
     [Parameter(Mandatory)]
-    [string]$IsccPath
+    [string]$IsccPath,
+    [Parameter(Mandatory)]
+    [string]$ApksignerPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +17,7 @@ New-Item -ItemType Directory -Path $stage | Out-Null
 try {
     Expand-Archive -LiteralPath $RuntimeBundle -DestinationPath $stage
     & powershell -ExecutionPolicy Bypass -File (Join-Path $repo 'windows\scripts\sync-apk.ps1') -StageRoot $stage
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $repo 'windows\scripts\verify-runtime.ps1') -RuntimeRoot $stage
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $repo 'windows\scripts\verify-runtime.ps1') -RuntimeRoot $stage -ApksignerPath $ApksignerPath
     & $IsccPath "/DSourceRoot=$stage" (Join-Path $repo 'windows\installer\TangoPro.iss')
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
 } catch {

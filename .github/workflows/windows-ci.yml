@@ -2,10 +2,10 @@ name: Windows runtime CI
 
 on:
   pull_request:
-    paths: ["windows/**", "app/**", ".github/workflows/windows-ci.yml"]
+    paths: ["windows/**", "app/**", ".github/workflows/windows-ci.yml", ".github/workflows/espeak-android.yml"]
   push:
     branches: [main]
-    paths: ["windows/**", "app/**", ".github/workflows/windows-ci.yml"]
+    paths: ["windows/**", "app/**", ".github/workflows/windows-ci.yml", ".github/workflows/espeak-android.yml"]
 
 permissions:
   contents: read
@@ -30,7 +30,7 @@ jobs:
         shell: pwsh
         run: |
           $errors = @()
-          Get-ChildItem windows/scripts -Filter *.ps1 | ForEach-Object {
+          Get-ChildItem windows/guest/scripts -Filter *.ps1 | ForEach-Object {
             $tokens = $null
             $parseErrors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors)
@@ -43,3 +43,28 @@ jobs:
           Get-Content windows/runtime/runtime.lock.json -Raw | ConvertFrom-Json | Out-Null
           Get-Content windows/runtime/components.lock.json -Raw | ConvertFrom-Json | Out-Null
           Get-Content windows/runtime/app.lock.json -Raw | ConvertFrom-Json | Out-Null
+          $espeak = Get-Content windows/runtime/espeak-android-build.lock.json -Raw | ConvertFrom-Json
+          if ($espeak.status -ne 'ci-pending-not-approved-for-production' -or $espeak.upstream.commit -ne '7d426728fe146f4168fa716e29d8e276c7da33f2') { throw 'Unexpected eSpeak production build pin.' }
+          if ($espeak.toolchain.jdk.version -ne '17.0.12+7' -or $espeak.toolchain.androidGradlePlugin -ne '9.3.0' -or $espeak.toolchain.androidSdkPackages.ndk -ne 'ndk;29.0.14206865' -or $espeak.toolchain.androidSdkPackages.cmake -ne 'cmake;3.22.1') { throw 'eSpeak toolchain lock is incomplete.' }
+          if ($espeak.build.signing -ne 'not-performed-in-this-workflow' -or $espeak.build.reproducibilityRuns -ne 2) { throw 'eSpeak signing or reproducibility policy regressed.' }
+      - name: Validate guest manifests and binary exclusions
+        shell: pwsh
+        run: |
+          $schema = Get-Content windows/guest/schema/guest-manifest.schema.json -Raw | ConvertFrom-Json
+          if ($schema.oneOf.Count -ne 2) { throw 'Guest manifest schema is invalid.' }
+          $manifests = Get-ChildItem windows/guest/manifests -Filter *.json -File
+          if (-not $manifests) { throw 'No guest manifests were found.' }
+          foreach ($file in $manifests) {
+            $manifest = Get-Content $file.FullName -Raw | ConvertFrom-Json
+            if ($manifest.type -ne 'prebuilt-qemu') { continue }
+            if ($manifest.schema -ne 1 -or $manifest.upstream.architecture -ne 'x86_64' -or $manifest.upstream.variant -ne 'FOSS') { throw "Invalid guest manifest: $($file.Name)" }
+            if ($manifest.integrity.sha256 -notmatch '^[a-f0-9]{64}$' -or $manifest.integrity.sha256 -eq 'PIN_BEFORE_MERGE') { throw "Guest SHA-256 is not pinned: $($file.Name)" }
+            if ($manifest.runtime.systemArtifact -notin 'system.sfs','system.efs') { throw "Unsupported system artifact: $($file.Name)" }
+            if ($manifest.status -notin 'candidate-unpinned','candidate','approved','rejected') { throw "Unsupported guest status: $($file.Name)" }
+          }
+          $gsi = Get-Content windows/guest/manifests/android15-aosp-x86_64-gsi.json -Raw | ConvertFrom-Json
+          if ($gsi.schema -ne 1 -or $gsi.type -ne 'aosp-gsi-overlay' -or $gsi.androidVersion -ne '15' -or $gsi.apiLevel -ne 35 -or $gsi.architecture -ne 'x86_64' -or $gsi.variant -ne 'AOSP-non-GMS' -or $gsi.status -notin 'candidate','rejected') { throw 'Invalid AOSP GSI overlay manifest.' }
+          if ($gsi.sha256 -notmatch '^[a-f0-9]{64}$' -or $gsi.artifactName -notmatch '^aosp_x86_64-exp-.*\.zip$' -or $gsi.artifactUrl -notmatch '^https://dl\.google\.com/') { throw 'AOSP GSI artifact is not pinned to the official delivery host.' }
+          if (-not $gsi.license.acceptanceRequired -or $gsi.network.internet -ne $false -or $gsi.network.adb -ne 'host-local-only' -or $gsi.composition.overlayComponent -ne 'system.img') { throw 'AOSP GSI overlay policy is invalid.' }
+          $trackedBinary = git ls-files '*.iso' '*.img' '*.qcow2' '*.sfs' '*.zst'
+          if ($trackedBinary) { throw "Guest/runtime binary must not be committed: $($trackedBinary -join ', ')" }

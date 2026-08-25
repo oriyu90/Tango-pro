@@ -1,6 +1,24 @@
 use anyhow::Result;
 
-use crate::adb::Adb;
+use crate::{adb::Adb, errors::LauncherError};
+
+pub fn is_running(adb: &Adb, package_name: &str) -> bool {
+    adb.command(&["shell", "pidof", package_name])
+        .is_ok_and(|output| output.status.success() && !output.stdout.is_empty())
+}
+
+pub fn require_offline_tts(adb: &Adb) -> Result<()> {
+    const ESPEAK_PACKAGE: &str = "com.reecedunn.espeak";
+    let configured = adb.shell(&["settings", "get", "secure", "tts_default_synth"])?;
+    if !configured.starts_with(ESPEAK_PACKAGE) {
+        return Err(LauncherError::TtsProvisioningRequired.into());
+    }
+    let package_path = adb.shell(&["pm", "path", ESPEAK_PACKAGE])?;
+    if package_path.trim().is_empty() {
+        return Err(LauncherError::TtsProvisioningRequired.into());
+    }
+    Ok(())
+}
 
 pub fn installed_version(adb: &Adb, package_name: &str) -> Result<Option<u64>> {
     let result = adb.shell(&["dumpsys", "package", package_name]);
@@ -27,14 +45,14 @@ pub fn installed_base_apk(adb: &Adb, package_name: &str) -> Result<Option<String
         .map(str::to_owned))
 }
 
-pub fn verify_guest(adb: &Adb) -> Result<()> {
+pub fn verify_guest(adb: &Adb, expected_api: u32, expected_abi: &str) -> Result<()> {
     anyhow::ensure!(
-        adb.shell(&["getprop", "ro.build.version.sdk"])? == "35",
-        "guest API must be 35"
+        adb.shell(&["getprop", "ro.build.version.sdk"])? == expected_api.to_string(),
+        "guest API does not match selected backend"
     );
     anyhow::ensure!(
-        adb.shell(&["getprop", "ro.product.cpu.abi"])? == "x86_64",
-        "guest ABI must be x86_64"
+        adb.shell(&["getprop", "ro.product.cpu.abi"])? == expected_abi,
+        "guest ABI does not match selected backend"
     );
     Ok(())
 }

@@ -15,8 +15,18 @@ jobs:
         shell: pwsh
         run: |
           $components = Get-Content windows/runtime/components.lock.json -Raw | ConvertFrom-Json
-          if ($null -eq $components.aemu -or $null -eq $components.adb -or $null -eq $components.guestImage) {
-            throw 'Production runtime components are not pinned. A PoC SDK image must not be packaged.'
+          if ($components.runtimeModel -ne 'official-sdk-first-run' -or $null -eq $components.androidSdk -or $components.androidSdk.downloadedDirectlyByUser -ne $true) {
+            throw 'The production runtime must use the official user-acquired SDK model.'
+          }
+          if ($components.androidSdk.distribution -ne $false) {
+            throw 'Google Android SDK components must not be distributed by Tango Pro.'
+          }
+          $bootstrap = Get-Content windows/runtime/sdk-bootstrap.lock.json -Raw | ConvertFrom-Json
+          if ($bootstrap.commandLineTools.downloadedDirectlyByUser -ne $true -or -not $bootstrap.commandLineTools.sha256) {
+            throw 'The SDK bootstrap lock is incomplete.'
+          }
+          if ($components.status -ne 'approved') {
+            throw 'Runtime technical and license gates are not approved.'
           }
           if ((Get-Content windows/runtime/licenses/SOURCE_COMPONENTS.json -Raw | ConvertFrom-Json).status -ne 'approved') {
             throw 'License audit is not approved.'

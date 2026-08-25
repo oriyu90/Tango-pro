@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "blissos-16.9.7-foss-generic",
+  "type": "prebuilt-qemu",
+  "upstream": {
+    "project": "Bliss OS",
+    "release": "16.9.7",
+    "androidVersion": "13",
+    "architecture": "x86_64",
+    "variant": "FOSS",
+    "device": "Generic",
+    "artifact": "Bliss-v16.9.7-x86_64-OFFICIAL-foss-20241011.iso",
+    "artifactUrl": "https://downloads.sourceforge.net/project/blissos-x86/Official/BlissOS16/FOSS/Generic/Bliss-v16.9.7-x86_64-OFFICIAL-foss-20241011.iso",
+    "checksumUrl": "https://downloads.sourceforge.net/project/blissos-x86/Official/BlissOS16/FOSS/Generic/Bliss-v16.9.7-x86_64-OFFICIAL-foss-20241011.iso.sha256",
+    "lifecycle": "archived"
+  },
+  "integrity": { "sha256": "735cb962ec6bd92b62eb82a812831a38d79a0dfdf12b7973d2d0f7ab001ba68e" },
+  "runtime": { "engine": "qemu", "ramMb": 1536, "cpuCount": 2, "systemArtifact": "system.efs" },
+  "network": { "internet": false, "adb": true },
+  "status": "rejected"
+}

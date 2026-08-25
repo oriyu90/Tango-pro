@@ -19,7 +19,9 @@ New-Item -ItemType Directory -Path $stage | Out-Null
 Copy-Item -LiteralPath $launcher -Destination (Join-Path $stage 'TangoPro.exe')
 Copy-Item -LiteralPath (Join-Path $repo 'windows\runtime\runtime.lock.json') -Destination (Join-Path $stage 'runtime.lock.json')
 Copy-Item -LiteralPath (Join-Path $repo 'windows\runtime\components.lock.json') -Destination (Join-Path $stage 'components.lock.json')
+Copy-Item -LiteralPath (Join-Path $repo 'windows\runtime\sdk-bootstrap.lock.json') -Destination (Join-Path $stage 'sdk-bootstrap.lock.json')
 New-Item -ItemType Directory -Path (Join-Path $stage 'runtime') | Out-Null
+Copy-Item -LiteralPath (Join-Path $repo 'windows\runtime\setup-android-runtime.ps1') -Destination (Join-Path $stage 'runtime\setup-android-runtime.ps1')
 Copy-Item -LiteralPath (Join-Path $SdkRoot 'platform-tools') -Destination (Join-Path $stage 'runtime\adb') -Recurse
 Copy-Item -LiteralPath (Join-Path $SdkRoot 'emulator') -Destination (Join-Path $stage 'runtime\emulator') -Recurse
 Copy-Item -LiteralPath (Join-Path $SdkRoot 'build-tools\36.0.0') -Destination (Join-Path $stage 'runtime\android') -Recurse

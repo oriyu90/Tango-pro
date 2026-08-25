@@ -14,7 +14,33 @@ pub fn check(paths: &Paths) -> Result<()> {
         "runtime install directory is unavailable"
     );
     ensure_writable(&paths.userdata)?;
+    ensure_x86_64_v2()?;
     Ok(())
+}
+
+fn ensure_x86_64_v2() -> Result<()> {
+    #[cfg(target_arch = "x86_64")]
+    {
+        use std::arch::x86_64::__cpuid;
+        let basic = __cpuid(1);
+        let extended_max = __cpuid(0x8000_0000).eax;
+        let extended = if extended_max >= 0x8000_0001 {
+            __cpuid(0x8000_0001)
+        } else {
+            return Err(anyhow::anyhow!("HOST_CPU_TOO_OLD"));
+        };
+        let required = (basic.ecx & (1 << 0) != 0)
+            && (basic.ecx & (1 << 9) != 0)
+            && (basic.ecx & (1 << 13) != 0)
+            && (basic.ecx & (1 << 19) != 0)
+            && (basic.ecx & (1 << 20) != 0)
+            && (basic.ecx & (1 << 23) != 0)
+            && (extended.ecx & 1 != 0);
+        anyhow::ensure!(required, "HOST_CPU_TOO_OLD");
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err(anyhow::anyhow!("HOST_CPU_TOO_OLD"))
 }
 
 pub fn allocate_emulator_port() -> Result<u16> {

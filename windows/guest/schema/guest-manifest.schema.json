@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tango Pro guest manifest",
+  "oneOf": [
+    { "$ref": "#/$defs/prebuiltQemu" },
+    { "$ref": "#/$defs/aospGsiOverlay" }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "prebuiltQemu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "type", "upstream", "integrity", "runtime", "network", "status"],
+      "properties": {
+        "schema": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$" }, "type": { "const": "prebuilt-qemu" },
+        "upstream": { "type": "object", "additionalProperties": false, "required": ["project", "release", "androidVersion", "architecture", "variant", "device", "artifact", "artifactUrl", "checksumUrl", "lifecycle"], "properties": { "project": { "type": "string" }, "release": { "type": "string" }, "androidVersion": { "type": "string" }, "architecture": { "const": "x86_64" }, "variant": { "const": "FOSS" }, "device": { "type": "string" }, "artifact": { "type": "string", "pattern": "\\.iso$" }, "artifactUrl": { "type": "string", "format": "uri" }, "checksumUrl": { "type": "string", "format": "uri" }, "lifecycle": { "enum": ["active", "archived"] } } },
+        "integrity": { "type": "object", "additionalProperties": false, "required": ["sha256"], "properties": { "sha256": { "$ref": "#/$defs/sha256" } } },
+        "runtime": { "type": "object", "additionalProperties": false, "required": ["engine", "ramMb", "cpuCount", "systemArtifact"], "properties": { "engine": { "const": "qemu" }, "ramMb": { "type": "integer", "minimum": 1024 }, "cpuCount": { "type": "integer", "minimum": 1 }, "systemArtifact": { "enum": ["system.sfs", "system.efs"] } } },
+        "network": { "type": "object", "additionalProperties": false, "required": ["internet", "adb"], "properties": { "internet": { "const": false }, "adb": { "const": true } } },
+        "status": { "enum": ["candidate-unpinned", "candidate", "approved", "rejected"] }
+      }
+    },
+    "aospGsiOverlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "type", "provider", "androidVersion", "apiLevel", "buildId", "buildDate", "architecture", "variant", "artifactName", "artifactUrl", "sha256", "license", "composition", "network", "status"],
+      "properties": {
+        "schema": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$" }, "type": { "const": "aosp-gsi-overlay" }, "provider": { "const": "Android Developers" }, "androidVersion": { "const": "15" }, "apiLevel": { "const": 35 }, "buildId": { "type": "string", "minLength": 1 }, "buildDate": { "type": "string", "format": "date" }, "securityPatch": { "type": "string", "format": "date" }, "architecture": { "const": "x86_64" }, "variant": { "const": "AOSP-non-GMS" },
+        "artifactName": { "type": "string", "pattern": "^aosp_x86_64-exp-.*\\.zip$" }, "artifactUrl": { "type": "string", "pattern": "^https://dl\\.google\\.com/" }, "sha256": { "$ref": "#/$defs/sha256" },
+        "license": { "type": "object", "additionalProperties": false, "required": ["acceptanceRequired", "termsUrl"], "properties": { "acceptanceRequired": { "const": true }, "termsUrl": { "const": "https://developer.android.com/topic/generic-system-image/releases" } } },
+        "composition": { "type": "object", "additionalProperties": false, "required": ["description", "referenceComponents", "overlayComponent"], "properties": { "description": { "type": "string" }, "referenceComponents": { "type": "array", "minItems": 1, "items": { "type": "string" } }, "overlayComponent": { "const": "system.img" } } },
+        "network": { "type": "object", "additionalProperties": false, "required": ["internet", "adb"], "properties": { "internet": { "const": false }, "adb": { "const": "host-local-only" } } }, "status": { "enum": ["candidate", "rejected"] }
+      }
+    }
+  }
+}

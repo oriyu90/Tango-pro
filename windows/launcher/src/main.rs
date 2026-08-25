@@ -4,12 +4,14 @@ mod adb;
 mod app;
 mod emulator;
 mod errors;
+mod guest;
 mod integrity;
 mod ipc;
 mod logging;
 mod paths;
 mod preflight;
 mod process;
+mod runtime_setup;
 mod state;
 mod updater;
 mod viewer;
@@ -22,7 +24,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result};
@@ -60,34 +62,42 @@ fn run() -> Result<()> {
     log.event(machine.current().label());
     let runtime = integrity::verify_runtime(&paths)?;
     log.event(format!("runtime {}", runtime.runtime_version));
-    let app_lock = integrity::verify_payload(&paths)?;
+    let sdk = runtime_setup::ensure_ready(&paths)?;
+    log.event(format!("Android SDK source {}", sdk.source.label()));
+    let paths = paths.with_android_sdk(sdk.root);
+    let build_tools_version = sdk.lock.packages.build_tools.revision.clone();
+    let app_lock = integrity::verify_payload(&paths, &sdk.lock)?;
+    let guest = guest::select(&paths, &runtime)?;
+    guest.preflight(&paths)?;
 
     machine.advance(State::VerifyRuntime, State::AllocatePort)?;
     log.event(machine.current().label());
-    let port = preflight::allocate_emulator_port()?;
+    let mut port = preflight::allocate_emulator_port()?;
 
     machine.advance(State::AllocatePort, State::PrepareUserdata)?;
     log.event(machine.current().label());
     paths.prepare_userdata()?;
+    guest.prepare(&paths)?;
 
     let job = process::Job::new()?;
 
     machine.advance(State::PrepareUserdata, State::StartEmulator)?;
     log.event(machine.current().label());
-    let _emulator = emulator::start(&paths, &job, port)?;
-    let adb = adb::Adb::new(&paths, port);
+    log.event(format!("guest backend {}", guest.name()));
+    let mut guest_handle = guest.start(&paths, &job, port)?;
+    let mut adb = adb::Adb::new(&paths, guest_handle.adb_serial.clone());
 
     machine.advance(State::StartEmulator, State::WaitAdb)?;
     log.event(machine.current().label());
-    adb.wait_for_device(emulator::ADB_TIMEOUT)?;
+    adb.wait_for_device(guest.adb_timeout())?;
 
     machine.advance(State::WaitAdb, State::WaitBoot)?;
     log.event(machine.current().label());
-    adb.wait_for_boot(emulator::BOOT_TIMEOUT)?;
+    adb.wait_for_boot(guest.boot_timeout())?;
 
     machine.advance(State::WaitBoot, State::VerifyGuest)?;
     log.event(machine.current().label());
-    app::verify_guest(&adb)?;
+    app::verify_guest(&adb, guest.android_api(), guest.architecture())?;
 
     machine.advance(State::VerifyGuest, State::VerifyApp)?;
     log.event(machine.current().label());
@@ -95,7 +105,10 @@ fn run() -> Result<()> {
 
     machine.advance(State::VerifyApp, State::UpdateApp)?;
     log.event(machine.current().label());
-    updater::update_if_needed(&adb, &paths, &app_lock)?;
+    runtime_setup::mark_updating(&paths)?;
+    updater::update_if_needed(&adb, &paths, &app_lock, &build_tools_version)?;
+    app::require_offline_tts(&adb)?;
+    runtime_setup::mark_ready(&paths)?;
 
     machine.advance(State::UpdateApp, State::StartTango)?;
     log.event(machine.current().label());
@@ -127,6 +140,10 @@ fn run() -> Result<()> {
 
     machine.advance(State::StartViewer, State::Running)?;
     log.event(machine.current().label());
+    let mut viewer_recovery_attempts = 0_u8;
+    let mut tango_recovery_attempts = 0_u8;
+    let mut emulator_recovery_attempts = 0_u8;
+    let mut next_health_check = Instant::now();
     loop {
         if shutdown_requested.load(Ordering::Acquire) {
             log.event("shutdown requested by IPC");
@@ -134,11 +151,57 @@ fn run() -> Result<()> {
             let _ = viewer.wait();
             break;
         }
-        if let Some(viewer_status) = viewer.try_wait()? {
-            if !viewer_status.success() {
-                anyhow::bail!("viewer terminated unexpectedly: {viewer_status}");
+        if let Some(emulator_status) = guest_handle.try_wait()? {
+            if emulator_recovery_attempts >= 1 {
+                anyhow::bail!(
+                    "emulator terminated after its only recovery attempt: {emulator_status}"
+                );
             }
-            break;
+            emulator_recovery_attempts += 1;
+            log.event(format!(
+                "emulator exited ({emulator_status}); one recovery attempt"
+            ));
+            let _ = viewer.kill();
+            let _ = viewer.wait();
+            port = preflight::allocate_emulator_port()?;
+            guest_handle = guest.start(&paths, &job, port)?;
+            adb = adb::Adb::new(&paths, guest_handle.adb_serial.clone());
+            adb.wait_for_device(guest.adb_timeout())?;
+            adb.wait_for_boot(guest.boot_timeout())?;
+            app::verify_guest(&adb, guest.android_api(), guest.architecture())?;
+            runtime_setup::mark_updating(&paths)?;
+            updater::update_if_needed(&adb, &paths, &app_lock, &build_tools_version)?;
+            app::require_offline_tts(&adb)?;
+            runtime_setup::mark_ready(&paths)?;
+            adb.require_success(&["shell", "monkey", "-p", &app_lock.package_name, "1"])?;
+            viewer = viewer::start(&paths, &job, adb.serial(), &app_lock)?;
+            next_health_check = Instant::now() + Duration::from_secs(1);
+            continue;
+        }
+        if let Some(viewer_status) = viewer.try_wait()? {
+            if viewer_recovery_attempts >= 1 {
+                anyhow::bail!("viewer terminated after its only recovery attempt: {viewer_status}");
+            }
+            viewer_recovery_attempts += 1;
+            log.event(format!(
+                "viewer exited ({viewer_status}); one recovery attempt"
+            ));
+            viewer = viewer::start(&paths, &job, adb.serial(), &app_lock)?;
+            continue;
+        }
+        if Instant::now() >= next_health_check {
+            next_health_check = Instant::now() + Duration::from_secs(1);
+            if !app::is_running(&adb, &app_lock.package_name) {
+                if tango_recovery_attempts >= 1 {
+                    anyhow::bail!("Tango process terminated after its only recovery attempt");
+                }
+                tango_recovery_attempts += 1;
+                log.event("Tango process exited; one recovery attempt");
+                adb.require_success(&["shell", "monkey", "-p", &app_lock.package_name, "1"])?;
+                let _ = viewer.kill();
+                let _ = viewer.wait();
+                viewer = viewer::start(&paths, &job, adb.serial(), &app_lock)?;
+            }
         }
         thread::sleep(Duration::from_millis(200));
     }

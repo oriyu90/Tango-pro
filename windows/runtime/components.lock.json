@@ -1,6 +1,39 @@
 {
-  "schema": 1,
-  "aemu": null,
+  "schema": 2,
+  "runtimeModel": "official-sdk-first-run",
+  "androidSdk": {
+    "distribution": false,
+    "distributedByTango": false,
+    "downloadedDirectlyByUser": true,
+    "bootstrapLock": "sdk-bootstrap.lock.json",
+    "status": "implementation-complete-gates-pending"
+  },
+  "runtimeEngine": {
+    "type": "aemu-from-user-acquired-android-sdk",
+    "version": "locked-in-sdk-bootstrap",
+    "status": "implementation-complete-gates-pending"
+  },
+  "aemu": {
+    "purpose": "official-sdk-first-run-runtime",
+    "status": "implementation-complete-gates-pending",
+    "distribution": false
+  },
+  "aospGsiOverlay": {
+    "manifest": "windows/guest/manifests/android15-aosp-x86_64-gsi.json",
+    "systemImage": {
+      "buildId": "AP3A.241005.015",
+      "sha256": "96716f9bff890f7336274b8bc80b3dd816b3571f881beffbfe91800ee41300f9",
+      "status": "rejected-technical-gsi-pg1"
+    },
+    "referenceComponents": {
+      "aemu": "poc-only-not-distributable",
+      "kernel": "poc-only-not-distributable",
+      "ramdisk": "poc-only-not-distributable",
+      "vendor": "poc-only-not-distributable",
+      "userdata": "development-stage-only"
+    },
+    "status": "rejected-technical-gsi-pg1"
+  },
   "scrcpy": {
     "version": "4.1",
     "sourceCommit": "2926c06",
@@ -8,5 +41,9 @@
     "sha256": null
   },
   "adb": null,
-  "guestImage": null
+  "guestImage": {
+    "package": "system-images;android-35;default;x86_64",
+    "status": "downloaded-directly-by-user-license-required",
+    "distribution": false
+  }
 }

@@ -9,13 +9,15 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use crate::{errors::LauncherError, paths::Paths};
+use crate::{errors::LauncherError, paths::Paths, runtime_setup::SdkBootstrapLock};
 
 #[derive(Debug, Deserialize)]
 pub struct RuntimeLock {
     pub schema: u32,
     #[serde(rename = "runtimeVersion")]
     pub runtime_version: String,
+    #[serde(rename = "guestBackend")]
+    pub guest_backend: String,
     pub guest: GuestLock,
 }
 
@@ -44,9 +46,6 @@ pub fn verify_runtime(paths: &Paths) -> Result<RuntimeLock> {
         paths.runtime_lock(),
         paths.components_lock(),
         paths.app_lock(),
-        paths.adb(),
-        paths.apksigner(),
-        paths.emulator(),
         paths.viewer(),
         paths.payload_apk(),
     ] {
@@ -56,14 +55,21 @@ pub fn verify_runtime(paths: &Paths) -> Result<RuntimeLock> {
     }
     let lock: RuntimeLock = read_json(&paths.runtime_lock())?;
     anyhow::ensure!(lock.schema == 1, "unsupported runtime lock schema");
-    anyhow::ensure!(
-        lock.guest.android_api == 35 && lock.guest.architecture == "x86_64",
-        "unsupported guest lock"
-    );
+    match lock.guest_backend.as_str() {
+        "sdk-aemu" => anyhow::ensure!(
+            lock.guest.android_api == 35 && lock.guest.architecture == "x86_64",
+            "unsupported SDK AEMU guest lock"
+        ),
+        "prebuilt-qemu" => anyhow::ensure!(
+            paths.qemu().is_file() && paths.guest_manifest().is_file(),
+            "GUEST_BOOT_FAILED: prebuilt QEMU runtime is incomplete"
+        ),
+        other => anyhow::bail!("GUEST_UNSUPPORTED: unknown backend {other}"),
+    }
     Ok(lock)
 }
 
-pub fn verify_payload(paths: &Paths) -> Result<AppLock> {
+pub fn verify_payload(paths: &Paths, sdk: &SdkBootstrapLock) -> Result<AppLock> {
     let lock: AppLock = read_json(&paths.app_lock())?;
     anyhow::ensure!(lock.schema == 1, "unsupported app lock schema");
     anyhow::ensure!(
@@ -78,16 +84,27 @@ pub fn verify_payload(paths: &Paths) -> Result<AppLock> {
     if !actual.eq_ignore_ascii_case(&lock.sha256) {
         return Err(LauncherError::Integrity(paths.payload_apk()).into());
     }
-    verify_apk_certificate(paths, &paths.payload_apk(), &lock.certificate_sha256)?;
+    verify_apk_certificate(
+        paths,
+        &paths.payload_apk(),
+        &lock.certificate_sha256,
+        &sdk.packages.build_tools.revision,
+    )?;
     Ok(lock)
 }
 
-pub fn verify_apk_certificate(paths: &Paths, apk: &Path, expected: &str) -> Result<()> {
-    let output = Command::new(paths.apksigner())
+pub fn verify_apk_certificate(
+    paths: &Paths,
+    apk: &Path,
+    expected: &str,
+    build_tools_version: &str,
+) -> Result<()> {
+    let apksigner = paths.apksigner(build_tools_version);
+    let output = Command::new(&apksigner)
         .args(["verify", "--verbose", "--print-certs"])
         .arg(apk)
         .output()
-        .with_context(|| format!("cannot run {}", paths.apksigner().display()))?;
+        .with_context(|| format!("cannot run {}", apksigner.display()))?;
     anyhow::ensure!(
         output.status.success(),
         "apksigner rejected {}: {}",
