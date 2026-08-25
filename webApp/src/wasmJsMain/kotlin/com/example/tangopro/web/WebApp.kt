@@ -38,6 +38,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -84,26 +85,61 @@ import org.jetbrains.compose.resources.Font
 
 private val TangoLight = lightColorScheme(
     primary = Color(0xFF6750A4),
-    onPrimary = Color.White,
+    onPrimary = Color.Black,
     primaryContainer = Color(0xFFE9DDFF),
-    onPrimaryContainer = Color(0xFF22005D),
+    onPrimaryContainer = Color.Black,
     secondary = Color(0xFF386A20),
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFFD9F7D8),
+    onSecondaryContainer = Color.Black,
     background = Color(0xFFF9F7FC),
+    onBackground = Color.Black,
     surface = Color(0xFFFFFBFF),
+    onSurface = Color.Black,
     surfaceVariant = Color(0xFFE7E0EC),
+    onSurfaceVariant = Color.Black,
     error = Color(0xFFBA1A1A),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color.Black,
 )
 
 private val TangoDark = darkColorScheme(
     primary = Color(0xFFD0BCFF),
-    onPrimary = Color(0xFF381E72),
+    onPrimary = Color.White,
     primaryContainer = Color(0xFF4F378B),
-    onPrimaryContainer = Color(0xFFEADDFF),
+    onPrimaryContainer = Color.White,
     secondary = Color(0xFFA5D58C),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF143A1D),
+    onSecondaryContainer = Color.White,
     background = Color(0xFF121116),
+    onBackground = Color.White,
     surface = Color(0xFF1A191E),
+    onSurface = Color.White,
     surfaceVariant = Color(0xFF49454F),
+    onSurfaceVariant = Color.White,
     error = Color(0xFFFFB4AB),
+    errorContainer = Color(0xFF4A1717),
+    onErrorContainer = Color.White,
+)
+
+@Composable
+private fun neutralOutlinedButtonColors() = ButtonDefaults.outlinedButtonColors(
+    contentColor = MaterialTheme.colorScheme.onSurface,
+    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+)
+
+@Composable
+private fun neutralTextButtonColors() = ButtonDefaults.textButtonColors(
+    contentColor = MaterialTheme.colorScheme.onSurface,
+    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+)
+
+@Composable
+private fun neutralFilterChipColors() = FilterChipDefaults.filterChipColors(
+    labelColor = MaterialTheme.colorScheme.onSurface,
+    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
 )
 
 @Composable
@@ -227,7 +263,7 @@ private fun Dashboard(state: WebAppState) {
                     Alignment.CenterVertically,
                 ) {
                     Text("Tango pro", fontSize = 23.sp, fontWeight = FontWeight.ExtraBold)
-                    OutlinedButton(onClick = { showGroups = !showGroups }) { Text(if (showGroups) "閉じる" else "単語帳") }
+                    OutlinedButton(onClick = { showGroups = !showGroups }, colors = neutralOutlinedButtonColors()) { Text(if (showGroups) "閉じる" else "単語帳") }
                 }
                 if (showGroups) GroupRail(state, Modifier.fillMaxSize())
                 else DashboardContent(state, Modifier.fillMaxSize())
@@ -241,10 +277,10 @@ private fun GroupRail(state: WebAppState, modifier: Modifier = Modifier) {
     Column(modifier.background(MaterialTheme.colorScheme.surface).padding(12.dp)) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Column {
-                Text("Tango pro", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                Text("Tango pro", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 Text("端末内で学ぶ単語帳", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            TextButton(onClick = state::importCsv) { Text("＋ CSV") }
+            TextButton(onClick = state::importCsv, colors = neutralTextButtonColors()) { Text("＋ CSV") }
         }
         Spacer(Modifier.height(10.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -257,7 +293,7 @@ private fun GroupRail(state: WebAppState, modifier: Modifier = Modifier) {
                     ),
                 ) {
                     Row(Modifier.fillMaxWidth().padding(12.dp), Arrangement.spacedBy(10.dp), Alignment.CenterVertically) {
-                        Text(StudyLanguage.fromCode(group.language).shortName, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                        Text(StudyLanguage.fromCode(group.language).shortName, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                         Column(Modifier.weight(1f)) {
                             Text(group.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                             Text(StudyRound.label(state.rounds[group.id] ?: 1), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -294,12 +330,12 @@ private fun DashboardContent(state: WebAppState, modifier: Modifier = Modifier) 
                 Text(group.name, fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2)
                 Text("${state.words.size}語・${StudyRound.label(state.currentRound)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            TextButton(onClick = { showGroupEdit = true }) { Text("編集") }
-            TextButton(onClick = { showSettings = true }) { Text("設定") }
+            TextButton(onClick = { showGroupEdit = true }, colors = neutralTextButtonColors()) { Text("編集") }
+            TextButton(onClick = { showSettings = true }, colors = neutralTextButtonColors()) { Text("設定") }
         }
         if (state.simpleMode) {
             SimpleProgressCard(state)
-            OutlinedButton(onClick = { showStudyOptions = !showStudyOptions }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { showStudyOptions = !showStudyOptions }, modifier = Modifier.fillMaxWidth(), colors = neutralOutlinedButtonColors()) {
                 Text(if (showStudyOptions) "出題設定を閉じる" else "出題設定を開く")
             }
             if (showStudyOptions) StudyOptions(state)
@@ -313,13 +349,13 @@ private fun DashboardContent(state: WebAppState, modifier: Modifier = Modifier) 
             enabled = state.words.isNotEmpty(),
         ) { Text("学習を始める", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = state::showWords) { Text("単語一覧・編集") }
-            OutlinedButton(onClick = { showCombine = true }) { Text("単語帳を連結") }
-            OutlinedButton(onClick = { state.exportCsv(false) }) { Text("CSV保存") }
-            OutlinedButton(onClick = { state.exportCsv(true) }) { Text("共有") }
-            OutlinedButton(onClick = state::exportStudyArchive) { Text("学習記録ZIP保存") }
-            OutlinedButton(onClick = state::importStudyArchive) { Text("学習記録ZIP読込") }
-            OutlinedButton(onClick = { showReset = true }) { Text("進捗リセット") }
+            OutlinedButton(onClick = state::showWords, colors = neutralOutlinedButtonColors()) { Text("単語一覧・編集") }
+            OutlinedButton(onClick = { showCombine = true }, colors = neutralOutlinedButtonColors()) { Text("単語帳を連結") }
+            OutlinedButton(onClick = { state.exportCsv(false) }, colors = neutralOutlinedButtonColors()) { Text("CSV保存") }
+            OutlinedButton(onClick = { state.exportCsv(true) }, colors = neutralOutlinedButtonColors()) { Text("共有") }
+            OutlinedButton(onClick = state::exportStudyArchive, colors = neutralOutlinedButtonColors()) { Text("学習記録ZIP保存") }
+            OutlinedButton(onClick = state::importStudyArchive, colors = neutralOutlinedButtonColors()) { Text("学習記録ZIP読込") }
+            OutlinedButton(onClick = { showReset = true }, colors = neutralOutlinedButtonColors()) { Text("進捗リセット") }
             OutlinedButton(onClick = { showDelete = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("単語帳を削除") }
         }
         StorageCard(state)
@@ -342,7 +378,7 @@ private fun ProgressCard(state: WebAppState) {
         Column(Modifier.padding(18.dp), Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text("学習状況", fontWeight = FontWeight.ExtraBold)
-                Text("${state.learned * 100 / total}%", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                Text("${state.learned * 100 / total}%", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
             }
             LinearProgressIndicator(progress = { state.learned.toFloat() / total }, Modifier.fillMaxWidth().height(10.dp))
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
@@ -362,7 +398,7 @@ private fun SimpleProgressCard(state: WebAppState) {
         Column(Modifier.padding(18.dp), Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text("学習進捗", fontWeight = FontWeight.ExtraBold)
-                Text("${studied * 100 / total}%", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                Text("${studied * 100 / total}%", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
             }
             LinearProgressIndicator(progress = { studied.toFloat() / total }, Modifier.fillMaxWidth().height(12.dp))
             Text("$studied / ${state.words.size}語を学習", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -385,13 +421,13 @@ private fun StudyOptions(state: WebAppState) {
             Text("出題設定", fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
             Text("回答方法", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(state.multipleChoice, { state.setMultipleChoice(true) }, { Text("4択") })
-                FilterChip(!state.multipleChoice, { state.setMultipleChoice(false) }, { Text("タイピング") })
+                FilterChip(state.multipleChoice, { state.setMultipleChoice(true) }, { Text("4択") }, colors = neutralFilterChipColors())
+                FilterChip(!state.multipleChoice, { state.setMultipleChoice(false) }, { Text("タイピング") }, colors = neutralFilterChipColors())
             }
             Text("出題方向", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(state.directionForward, { state.setDirection(true) }, { Text("対象言語 → 日本語") }, enabled = state.multipleChoice)
-                FilterChip(!state.directionForward, { state.setDirection(false) }, { Text("日本語 → 対象言語") })
+                FilterChip(state.directionForward, { state.setDirection(true) }, { Text("対象言語 → 日本語") }, enabled = state.multipleChoice, colors = neutralFilterChipColors())
+                FilterChip(!state.directionForward, { state.setDirection(false) }, { Text("日本語 → 対象言語") }, colors = neutralFilterChipColors())
             }
             DropdownSelector(
                 label = "出題条件",
@@ -403,7 +439,7 @@ private fun StudyOptions(state: WebAppState) {
             Text("問題数", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(5, 10, 20, 50, 100_000).forEach { count ->
-                    FilterChip(state.quizCount == count, { state.setQuizCount(count) }, { Text(if (count == 100_000) "すべて" else "$count") })
+                    FilterChip(state.quizCount == count, { state.setQuizCount(count) }, { Text(if (count == 100_000) "すべて" else "$count") }, colors = neutralFilterChipColors())
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -433,6 +469,7 @@ private fun DropdownSelector(label: String, selected: String, options: List<Pair
             OutlinedButton(
                 onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth().semantics { contentDescription = "$label: $selected" },
+                colors = neutralOutlinedButtonColors(),
             ) { Text(selected, Modifier.weight(1f)); Text("▼") }
             DropdownMenu(expanded, { expanded = false }, modifier = Modifier.widthIn(min = 240.dp)) {
                 options.forEach { (id, text) -> DropdownMenuItem({ Text(text) }, { onSelect(id); expanded = false }) }
@@ -463,7 +500,7 @@ private fun StorageCard(state: WebAppState) {
 private fun SettingsDialog(state: WebAppState, dismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = dismiss,
-        confirmButton = { TextButton(onClick = dismiss) { Text("閉じる") } },
+        confirmButton = { TextButton(onClick = dismiss, colors = neutralTextButtonColors()) { Text("閉じる") } },
         title = { Text("表示・音声設定") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), Arrangement.spacedBy(12.dp)) {
@@ -489,9 +526,9 @@ private fun CsvImportDialog(state: WebAppState, pending: PendingCsvImport) {
     AlertDialog(
         onDismissRequest = state::cancelCsvImport,
         confirmButton = {
-            TextButton(onClick = { state.confirmCsvImport(name, language) }, enabled = name.isNotBlank()) { Text("追加") }
+            TextButton(onClick = { state.confirmCsvImport(name, language) }, enabled = name.isNotBlank(), colors = neutralTextButtonColors()) { Text("追加") }
         },
-        dismissButton = { TextButton(onClick = state::cancelCsvImport) { Text("キャンセル") } },
+        dismissButton = { TextButton(onClick = state::cancelCsvImport, colors = neutralTextButtonColors()) { Text("キャンセル") } },
         title = { Text("CSV単語帳を追加") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -510,9 +547,9 @@ private fun CombineDialog(state: WebAppState, dismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = dismiss,
         confirmButton = {
-            TextButton(onClick = { state.combineGroups(selected.toList(), name, language); dismiss() }, enabled = selected.size >= 2 && name.isNotBlank()) { Text("連結") }
+            TextButton(onClick = { state.combineGroups(selected.toList(), name, language); dismiss() }, enabled = selected.size >= 2 && name.isNotBlank(), colors = neutralTextButtonColors()) { Text("連結") }
         },
-        dismissButton = { TextButton(onClick = dismiss) { Text("キャンセル") } },
+        dismissButton = { TextButton(onClick = dismiss, colors = neutralTextButtonColors()) { Text("キャンセル") } },
         title = { Text("単語帳を連結") },
         text = {
             Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
@@ -557,8 +594,8 @@ private fun GroupEditDialog(state: WebAppState, group: StudyGroupRecord, dismiss
     var language by remember(group.id) { mutableStateOf(group.language) }
     AlertDialog(
         onDismissRequest = dismiss,
-        confirmButton = { TextButton(onClick = { state.renameGroup(name, language); dismiss() }, enabled = name.isNotBlank()) { Text("保存") } },
-        dismissButton = { TextButton(onClick = dismiss) { Text("キャンセル") } },
+        confirmButton = { TextButton(onClick = { state.renameGroup(name, language); dismiss() }, enabled = name.isNotBlank(), colors = neutralTextButtonColors()) { Text("保存") } },
+        dismissButton = { TextButton(onClick = dismiss, colors = neutralTextButtonColors()) { Text("キャンセル") } },
         title = { Text("単語帳を編集") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -573,8 +610,8 @@ private fun GroupEditDialog(state: WebAppState, group: StudyGroupRecord, dismiss
 private fun ConfirmDialog(title: String, message: String, confirm: () -> Unit, dismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = dismiss,
-        confirmButton = { TextButton(onClick = confirm) { Text("実行", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = dismiss) { Text("キャンセル") } },
+        confirmButton = { TextButton(onClick = confirm, colors = neutralTextButtonColors()) { Text("実行", color = MaterialTheme.colorScheme.error) } },
+        dismissButton = { TextButton(onClick = dismiss, colors = neutralTextButtonColors()) { Text("キャンセル") } },
         title = { Text(title) },
         text = { Text(message) },
     )
@@ -585,12 +622,12 @@ private fun WordEditor(state: WebAppState) {
     var editing by remember { mutableStateOf<WordRecord?>(null) }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(12.dp), Arrangement.spacedBy(10.dp), Alignment.CenterVertically) {
-            OutlinedButton(onClick = state::showDashboard) { Text("← 戻る") }
+            OutlinedButton(onClick = state::showDashboard, colors = neutralOutlinedButtonColors()) { Text("← 戻る") }
             Column(Modifier.weight(1f)) {
                 Text(state.selectedGroup?.name.orEmpty(), fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("${state.words.size}語", fontSize = 12.sp)
             }
-            OutlinedButton(onClick = { state.exportCsv(false) }) { Text("CSV保存") }
+            OutlinedButton(onClick = { state.exportCsv(false) }, colors = neutralOutlinedButtonColors()) { Text("CSV保存") }
         }
         HorizontalDivider()
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -599,8 +636,8 @@ private fun WordEditor(state: WebAppState) {
                     Row(Modifier.fillMaxWidth().padding(12.dp), Arrangement.spacedBy(12.dp), Alignment.CenterVertically) {
                         Text(word.term, Modifier.weight(1f), fontWeight = FontWeight.Bold)
                         Text(word.meaning, Modifier.weight(1f))
-                        if (word.tag.isNotBlank()) Text(word.tag, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
-                        Text("編集", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                        if (word.tag.isNotBlank()) Text(word.tag, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("編集", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                     }
                 }
             }
@@ -617,8 +654,8 @@ private fun WordEditDialog(word: WordRecord, dismiss: () -> Unit, save: (WordRec
     var pronunciation by remember(word.id) { mutableStateOf(word.pronunciation) }
     AlertDialog(
         onDismissRequest = dismiss,
-        confirmButton = { TextButton(onClick = { save(word.copy(term = term.trim(), meaning = meaning.trim(), tag = tag.trim(), pronunciation = pronunciation.trim())) }, enabled = term.isNotBlank() && meaning.isNotBlank()) { Text("保存") } },
-        dismissButton = { TextButton(onClick = dismiss) { Text("キャンセル") } },
+        confirmButton = { TextButton(onClick = { save(word.copy(term = term.trim(), meaning = meaning.trim(), tag = tag.trim(), pronunciation = pronunciation.trim())) }, enabled = term.isNotBlank() && meaning.isNotBlank(), colors = neutralTextButtonColors()) { Text("保存") } },
+        dismissButton = { TextButton(onClick = dismiss, colors = neutralTextButtonColors()) { Text("キャンセル") } },
         title = { Text("単語を編集") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), Arrangement.spacedBy(9.dp)) {
@@ -638,8 +675,8 @@ private fun StudyScreen(state: WebAppState) {
     Column(Modifier.fillMaxSize().padding(16.dp), Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Text("${state.currentIndex + 1} / ${state.questions.size}", fontWeight = FontWeight.Bold)
-            Text("正解 ${state.score}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            TextButton(onClick = state::stopStudy) { Text("中断", color = MaterialTheme.colorScheme.error) }
+            Text("正解 ${state.score}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            TextButton(onClick = state::stopStudy, colors = neutralTextButtonColors()) { Text("中断", color = MaterialTheme.colorScheme.error) }
         }
         LinearProgressIndicator({ (state.currentIndex + 1f) / state.questions.size }, Modifier.fillMaxWidth())
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -647,7 +684,7 @@ private fun StudyScreen(state: WebAppState) {
             if (wide) {
                 Row(Modifier.fillMaxSize(), Arrangement.spacedBy(14.dp)) {
                     QuestionCard(state, question.questionText, question.word.tag, Modifier.weight(1f).fillMaxHeight())
-                    AnswerArea(state, typed, { typed = it }, Modifier.weight(1f).verticalScroll(rememberScrollState()))
+                    AnswerArea(state, typed, { typed = it }, compactWide = true, modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()))
                 }
             } else {
                 Column(
@@ -655,7 +692,7 @@ private fun StudyScreen(state: WebAppState) {
                     if (state.evenStudyLayout) Arrangement.SpaceEvenly else Arrangement.spacedBy(14.dp),
                 ) {
                     QuestionCard(state, question.questionText, question.word.tag, Modifier.fillMaxWidth().heightIn(min = 240.dp))
-                    AnswerArea(state, typed, { typed = it }, Modifier.fillMaxWidth())
+                    AnswerArea(state, typed, { typed = it }, compactWide = false, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -666,7 +703,7 @@ private fun StudyScreen(state: WebAppState) {
 private fun QuestionCard(state: WebAppState, text: String, tag: String, modifier: Modifier) {
     Card(modifier.clickable { state.speakCurrent() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
         Column(Modifier.fillMaxSize().padding(24.dp), Arrangement.Center, Alignment.CenterHorizontally) {
-            if (tag.isNotBlank()) Text(tag, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            if (tag.isNotBlank()) Text(tag, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(10.dp))
             Text(text, fontSize = (34 * state.textScale).sp, lineHeight = (42 * state.textScale).sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onPrimaryContainer)
             Spacer(Modifier.height(12.dp))
@@ -676,22 +713,23 @@ private fun QuestionCard(state: WebAppState, text: String, tag: String, modifier
 }
 
 @Composable
-private fun AnswerArea(state: WebAppState, typed: String, setTyped: (String) -> Unit, modifier: Modifier) {
+private fun AnswerArea(state: WebAppState, typed: String, setTyped: (String) -> Unit, compactWide: Boolean, modifier: Modifier) {
     val question = state.questions[state.currentIndex]
-    Column(modifier, Arrangement.spacedBy(10.dp)) {
+    Column(modifier, Arrangement.spacedBy(if (compactWide) 8.dp else 10.dp)) {
         if (question.isMultipleChoice) {
-            question.choices.forEach { choice ->
-                val color = when {
-                    state.checked && choice == question.correctAnswer -> Color(0xFF2E7D32)
-                    state.checked && choice == state.answer && !state.correct -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.surfaceVariant
+            if (compactWide) {
+                question.choices.chunked(2).forEach { choices ->
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                        choices.forEach { choice ->
+                            AnswerChoice(state, choice, question.correctAnswer, Modifier.weight(1f))
+                        }
+                        if (choices.size == 1) Spacer(Modifier.weight(1f))
+                    }
                 }
-                Button(
-                    onClick = { state.submitAnswer(choice) },
-                    enabled = !state.checked,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = color, disabledContainerColor = color, disabledContentColor = if (state.checked) Color.White else MaterialTheme.colorScheme.onSurfaceVariant),
-                ) { Text(choice, fontSize = (15 * state.textScale).sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center) }
+            } else {
+                question.choices.forEach { choice ->
+                    AnswerChoice(state, choice, question.correctAnswer, Modifier.fillMaxWidth())
+                }
             }
         } else if (!state.checked) {
             OutlinedTextField(
@@ -706,15 +744,47 @@ private fun AnswerArea(state: WebAppState, typed: String, setTyped: (String) -> 
             Button({ state.submitAnswer(typed) }, Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = typed.isNotBlank()) { Text("判定する") }
         }
         if (state.checked) {
-            Card(colors = CardDefaults.cardColors(containerColor = if (state.correct) Color(0xFFD9F7D8) else Color(0xFFFFDAD6))) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), Arrangement.spacedBy(5.dp), Alignment.CenterHorizontally) {
-                    Text(if (state.correct) "正解！" else "不正解", fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, color = if (state.correct) Color(0xFF1B5E20) else Color(0xFF9B1C1C))
-                    Text("あなたの回答: ${state.answer}")
-                    Text("正解: ${question.correctAnswer}", fontWeight = FontWeight.Bold)
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (state.correct) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(if (compactWide) 10.dp else 16.dp), Arrangement.spacedBy(if (compactWide) 3.dp else 5.dp), Alignment.CenterHorizontally) {
+                    Text(
+                        if (state.correct) "正解！" else "不正解",
+                        fontSize = if (compactWide) 18.sp else 21.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (state.correct) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
+                    )
+                    Text("あなたの回答: ${state.answer}", maxLines = if (compactWide) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+                    Text("正解: ${question.correctAnswer}", fontWeight = FontWeight.Bold, maxLines = if (compactWide) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
                 }
             }
-            Button(state::nextQuestion, Modifier.fillMaxWidth().heightIn(min = 54.dp)) { Text("次へ →", fontWeight = FontWeight.Bold) }
+            Button(state::nextQuestion, Modifier.fillMaxWidth().heightIn(min = if (compactWide) 48.dp else 54.dp)) { Text("次へ →", fontWeight = FontWeight.Bold) }
         }
+    }
+}
+
+@Composable
+private fun AnswerChoice(state: WebAppState, choice: String, correctAnswer: String, modifier: Modifier) {
+    val containerColor = when {
+        state.checked && choice == correctAnswer -> MaterialTheme.colorScheme.secondaryContainer
+        state.checked && choice == state.answer && !state.correct -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    Button(
+        onClick = { state.submitAnswer(choice) },
+        enabled = !state.checked,
+        modifier = modifier.heightIn(min = 54.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            disabledContainerColor = containerColor,
+            disabledContentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) {
+        Text(choice, fontSize = (15 * state.textScale).sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -724,10 +794,10 @@ private fun SummaryScreen(state: WebAppState) {
         Card(Modifier.widthIn(max = 620.dp).fillMaxWidth()) {
             Column(Modifier.padding(28.dp), Arrangement.spacedBy(14.dp), Alignment.CenterHorizontally) {
                 Text("学習完了", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold)
-                Text("${state.score} / ${state.questions.size}", fontSize = 43.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                Text("${state.score} / ${state.questions.size}", fontSize = 43.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 Text("正答率 ${state.score * 100 / state.questions.size.coerceAtLeast(1)}%")
                 Button(state::startStudy, Modifier.fillMaxWidth()) { Text("同じ条件でもう一度") }
-                OutlinedButton(state::showDashboard, Modifier.fillMaxWidth()) { Text("ダッシュボードへ") }
+                OutlinedButton(state::showDashboard, Modifier.fillMaxWidth(), colors = neutralOutlinedButtonColors()) { Text("ダッシュボードへ") }
             }
         }
     }
