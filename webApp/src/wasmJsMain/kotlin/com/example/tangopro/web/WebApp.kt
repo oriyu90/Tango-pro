@@ -80,7 +80,7 @@ import com.example.tangopro.domain.StudyRound
 import com.example.tangopro.model.StudyGroupRecord
 import com.example.tangopro.model.WordRecord
 import com.example.tangopro.web.generated.resources.Res
-import com.example.tangopro.web.generated.resources.noto_sans_sc
+import com.example.tangopro.web.generated.resources.tango_pro_unicode
 import org.jetbrains.compose.resources.Font
 
 private val TangoLight = lightColorScheme(
@@ -189,9 +189,9 @@ private fun TangoTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // The SC family includes Latin, kana, and the full Simplified Chinese set used
-    // by both the bundled books and arbitrary imported Chinese vocabulary.
-    val fontFamily = FontFamily(Font(Res.font.noto_sans_sc))
+    // A generated OFL derivative covering CJK, extended Latin, math, and common
+    // symbols used by arbitrary UTF-8 CSV vocabulary.
+    val fontFamily = FontFamily(Font(Res.font.tango_pro_unicode))
     val colors = if (darkTheme) TangoDark else TangoLight
     MaterialTheme(colorScheme = colors) {
         val base = MaterialTheme.typography
@@ -672,27 +672,81 @@ private fun WordEditDialog(word: WordRecord, dismiss: () -> Unit, save: (WordRec
 private fun StudyScreen(state: WebAppState) {
     val question = state.questions.getOrNull(state.currentIndex) ?: return
     var typed by remember(state.currentIndex) { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(16.dp), Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-            Text("${state.currentIndex + 1} / ${state.questions.size}", fontWeight = FontWeight.Bold)
-            Text("正解 ${state.score}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-            TextButton(onClick = state::stopStudy, colors = neutralTextButtonColors()) { Text("中断", color = MaterialTheme.colorScheme.error) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val phone = maxWidth < 600.dp
+        val tightPhone = phone && maxHeight < 700.dp
+        val edgePadding = when {
+            tightPhone -> 8.dp
+            phone -> 10.dp
+            else -> 16.dp
         }
-        LinearProgressIndicator({ (state.currentIndex + 1f) / state.questions.size }, Modifier.fillMaxWidth())
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val wide = maxWidth >= 760.dp && maxWidth > maxHeight
-            if (wide) {
-                Row(Modifier.fillMaxSize(), Arrangement.spacedBy(14.dp)) {
-                    QuestionCard(state, question.questionText, question.word.tag, Modifier.weight(1f).fillMaxHeight())
-                    AnswerArea(state, typed, { typed = it }, compactWide = true, modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()))
-                }
-            } else {
-                Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-                    if (state.evenStudyLayout) Arrangement.SpaceEvenly else Arrangement.spacedBy(14.dp),
-                ) {
-                    QuestionCard(state, question.questionText, question.word.tag, Modifier.fillMaxWidth().heightIn(min = 240.dp))
-                    AnswerArea(state, typed, { typed = it }, compactWide = false, modifier = Modifier.fillMaxWidth())
+        val sectionSpacing = when {
+            tightPhone -> 6.dp
+            phone -> 8.dp
+            else -> 12.dp
+        }
+        Column(Modifier.fillMaxSize().padding(edgePadding), Arrangement.spacedBy(sectionSpacing)) {
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                Text("${state.currentIndex + 1} / ${state.questions.size}", fontWeight = FontWeight.Bold)
+                Text("正解 ${state.score}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                TextButton(onClick = state::stopStudy, colors = neutralTextButtonColors()) { Text("中断", color = MaterialTheme.colorScheme.error) }
+            }
+            LinearProgressIndicator({ (state.currentIndex + 1f) / state.questions.size }, Modifier.fillMaxWidth())
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                val wide = maxWidth >= 760.dp && maxWidth > maxHeight
+                if (wide) {
+                    Row(Modifier.fillMaxSize(), Arrangement.spacedBy(14.dp)) {
+                        QuestionCard(state, question.questionText, question.word.tag, modifier = Modifier.weight(1f).fillMaxHeight())
+                        AnswerArea(
+                            state,
+                            typed,
+                            { typed = it },
+                            compactWide = true,
+                            compactPhone = false,
+                            showNextButton = true,
+                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                        )
+                    }
+                } else {
+                    val questionHeight = when {
+                        tightPhone && state.checked -> (
+                            (maxHeight * 0.15f).coerceIn(72.dp, 88.dp) +
+                                ((state.textScale - 1f).coerceAtLeast(0f) * 30).dp
+                            ).coerceAtMost(100.dp)
+                        phone && state.checked -> (maxHeight * 0.22f).coerceIn(112.dp, 150.dp)
+                        tightPhone -> (maxHeight * 0.25f).coerceIn(118.dp, 150.dp)
+                        phone -> (maxHeight * 0.30f).coerceIn(150.dp, 210.dp)
+                        else -> 240.dp
+                    }
+                    Column(Modifier.fillMaxSize()) {
+                        Column(
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                            verticalArrangement = if (!phone && state.evenStudyLayout) Arrangement.SpaceEvenly else Arrangement.spacedBy(if (tightPhone) 5.dp else if (phone) 8.dp else 14.dp),
+                        ) {
+                            QuestionCard(
+                                state,
+                                question.questionText,
+                                question.word.tag,
+                                compact = phone && (tightPhone || state.checked),
+                                showHint = !(tightPhone && state.checked),
+                                modifier = Modifier.fillMaxWidth().height(questionHeight),
+                            )
+                            AnswerArea(
+                                state,
+                                typed,
+                                { typed = it },
+                                compactWide = false,
+                                compactPhone = phone,
+                                tightPhone = tightPhone,
+                                showNextButton = false,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        if (state.checked) {
+                            Spacer(Modifier.height(if (tightPhone) 3.dp else if (phone) 6.dp else 10.dp))
+                            NextQuestionButton(state, compact = phone)
+                        }
+                    }
                 }
             }
         }
@@ -700,35 +754,61 @@ private fun StudyScreen(state: WebAppState) {
 }
 
 @Composable
-private fun QuestionCard(state: WebAppState, text: String, tag: String, modifier: Modifier) {
+private fun QuestionCard(
+    state: WebAppState,
+    text: String,
+    tag: String,
+    compact: Boolean = false,
+    showHint: Boolean = true,
+    modifier: Modifier,
+) {
     Card(modifier.clickable { state.speakCurrent() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-        Column(Modifier.fillMaxSize().padding(24.dp), Arrangement.Center, Alignment.CenterHorizontally) {
-            if (tag.isNotBlank()) Text(tag, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(10.dp))
-            Text(text, fontSize = (34 * state.textScale).sp, lineHeight = (42 * state.textScale).sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            Spacer(Modifier.height(12.dp))
-            Text("タップして読み上げ", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.fillMaxSize().padding(if (compact) 6.dp else 16.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+            if (tag.isNotBlank()) Text(tag, fontSize = if (compact) 10.sp else 12.sp, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.height(if (compact) 3.dp else 10.dp))
+            Text(
+                text,
+                fontSize = ((if (compact) 29 else 34) * state.textScale).sp,
+                lineHeight = ((if (compact) 34 else 42) * state.textScale).sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            if (showHint) {
+                Spacer(Modifier.height(if (compact) 4.dp else 12.dp))
+                Text("タップして読み上げ", fontSize = if (compact) 9.sp else 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
 
 @Composable
-private fun AnswerArea(state: WebAppState, typed: String, setTyped: (String) -> Unit, compactWide: Boolean, modifier: Modifier) {
+private fun AnswerArea(
+    state: WebAppState,
+    typed: String,
+    setTyped: (String) -> Unit,
+    compactWide: Boolean,
+    compactPhone: Boolean,
+    tightPhone: Boolean = false,
+    showNextButton: Boolean,
+    modifier: Modifier,
+) {
     val question = state.questions[state.currentIndex]
-    Column(modifier, Arrangement.spacedBy(if (compactWide) 8.dp else 10.dp)) {
+    val compact = compactWide || compactPhone
+    Column(modifier, Arrangement.spacedBy(if (tightPhone) 5.dp else if (compact) 8.dp else 10.dp)) {
         if (question.isMultipleChoice) {
             if (compactWide) {
                 question.choices.chunked(2).forEach { choices ->
                     Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                         choices.forEach { choice ->
-                            AnswerChoice(state, choice, question.correctAnswer, Modifier.weight(1f))
+                            AnswerChoice(state, choice, question.correctAnswer, compact = true, modifier = Modifier.weight(1f))
                         }
                         if (choices.size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
             } else {
                 question.choices.forEach { choice ->
-                    AnswerChoice(state, choice, question.correctAnswer, Modifier.fillMaxWidth())
+                    AnswerChoice(state, choice, question.correctAnswer, compact = compactPhone, modifier = Modifier.fillMaxWidth())
                 }
             }
         } else if (!state.checked) {
@@ -750,24 +830,41 @@ private fun AnswerArea(state: WebAppState, typed: String, setTyped: (String) -> 
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             ) {
-                Column(Modifier.fillMaxWidth().padding(if (compactWide) 10.dp else 16.dp), Arrangement.spacedBy(if (compactWide) 3.dp else 5.dp), Alignment.CenterHorizontally) {
+                Column(
+                    Modifier.fillMaxWidth().padding(if (tightPhone) 7.dp else if (compact) 10.dp else 16.dp),
+                    Arrangement.spacedBy(if (tightPhone) 2.dp else if (compact) 3.dp else 5.dp),
+                    Alignment.CenterHorizontally,
+                ) {
                     Text(
                         if (state.correct) "正解！" else "不正解",
-                        fontSize = if (compactWide) 18.sp else 21.sp,
+                        fontSize = if (tightPhone) 17.sp else if (compact) 18.sp else 21.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (state.correct) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error,
                     )
-                    Text("あなたの回答: ${state.answer}", maxLines = if (compactWide) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
-                    Text("正解: ${question.correctAnswer}", fontWeight = FontWeight.Bold, maxLines = if (compactWide) 1 else Int.MAX_VALUE, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        "あなたの回答: ${state.answer}",
+                        fontSize = if (tightPhone) 13.sp else if (compact) 14.sp else 16.sp,
+                        lineHeight = if (tightPhone) 16.sp else if (compact) 20.sp else 24.sp,
+                        maxLines = if (compactWide) 1 else 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        "正解: ${question.correctAnswer}",
+                        fontSize = if (tightPhone) 13.sp else if (compact) 14.sp else 16.sp,
+                        lineHeight = if (tightPhone) 16.sp else if (compact) 20.sp else 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = if (compactWide) 1 else 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
-            Button(state::nextQuestion, Modifier.fillMaxWidth().heightIn(min = if (compactWide) 48.dp else 54.dp)) { Text("次へ →", fontWeight = FontWeight.Bold) }
+            if (showNextButton) NextQuestionButton(state, compact)
         }
     }
 }
 
 @Composable
-private fun AnswerChoice(state: WebAppState, choice: String, correctAnswer: String, modifier: Modifier) {
+private fun AnswerChoice(state: WebAppState, choice: String, correctAnswer: String, compact: Boolean, modifier: Modifier) {
     val containerColor = when {
         state.checked && choice == correctAnswer -> MaterialTheme.colorScheme.secondaryContainer
         state.checked && choice == state.answer && !state.correct -> MaterialTheme.colorScheme.errorContainer
@@ -776,7 +873,7 @@ private fun AnswerChoice(state: WebAppState, choice: String, correctAnswer: Stri
     Button(
         onClick = { state.submitAnswer(choice) },
         enabled = !state.checked,
-        modifier = modifier.heightIn(min = 54.dp),
+        modifier = modifier.heightIn(min = if (compact) 48.dp else 54.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -784,7 +881,14 @@ private fun AnswerChoice(state: WebAppState, choice: String, correctAnswer: Stri
             disabledContentColor = MaterialTheme.colorScheme.onSurface,
         ),
     ) {
-        Text(choice, fontSize = (15 * state.textScale).sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        Text(choice, fontSize = ((if (compact) 14 else 15) * state.textScale).sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = if (compact) 2 else 3, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun NextQuestionButton(state: WebAppState, compact: Boolean) {
+    Button(state::nextQuestion, Modifier.fillMaxWidth().heightIn(min = if (compact) 48.dp else 54.dp)) {
+        Text("次へ →", fontWeight = FontWeight.Bold)
     }
 }
 

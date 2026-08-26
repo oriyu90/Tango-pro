@@ -64,8 +64,8 @@ if "?vfs=opfs" not in worker or "?vfs=opfs-wl" not in worker or "ignoreSearch: t
     raise SystemExit("Service Worker must precache and resolve both SQLite OPFS worker URL variants")
 if not list(root.glob("*.wasm")):
     raise SystemExit("No Wasm binaries were produced")
-if not (root / "composeResources/com.example.tangopro.web.generated.resources/font/noto_sans_sc.ttf").is_file():
-    raise SystemExit("The CJK font resource is missing")
+if not (root / "composeResources/com.example.tangopro.web.generated.resources/font/tango_pro_unicode.ttf").is_file():
+    raise SystemExit("The multilingual Unicode font resource is missing")
 if not (root / "THIRD_PARTY_LICENSES.txt").is_file():
     raise SystemExit("The third-party license inventory is missing")
 print(f"Web distribution: PASS ({len(assets)} assets, build {build['buildId']})")
