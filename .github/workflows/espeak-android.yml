@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
           mkdir -p "$ANDROID_HOME/licenses"
-          printf '%s' "$ANDROID_SDK_LICENSES_TAR_GZ_B64" | base64 --decode | tar --no-same-owner --no-same-permissions -xzf - -C "$ANDROID_HOME/licenses"
+          printf '%s' "$ANDROID_SDK_LICENSES_TAR_GZ_B64" | base64 --decode | tar --no-same-owner --no-same-permissions --no-overwrite-dir --touch -xzf - -C "$ANDROID_HOME/licenses"
           test -n "$(find "$ANDROID_HOME/licenses" -type f -print -quit)"
           sdkmanager --install \
             "platforms;android-34" \
