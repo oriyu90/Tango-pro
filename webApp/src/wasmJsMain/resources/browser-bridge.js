@@ -1,6 +1,64 @@
 (() => {
   const base = "/projects/tango-pro/web/";
   let releaseDatabaseLock = null;
+  let pendingSpeechCleanup = null;
+  let speechRequestId = 0;
+
+  const normalizeLanguageTag = value => String(value || "")
+    .trim()
+    .replace(/_/g, "-")
+    .toLowerCase();
+
+  const selectSpeechVoice = (voices, requestedLanguage) => {
+    const requested = normalizeLanguageTag(requestedLanguage);
+    const requestedBase = requested.split("-")[0];
+    if (!requestedBase) return null;
+
+    const compatible = Array.from(voices || []).filter(voice => {
+      const language = normalizeLanguageTag(voice?.lang);
+      return language === requested || language.split("-")[0] === requestedBase;
+    });
+    if (!compatible.length) return null;
+
+    compatible.sort((left, right) => {
+      const score = voice => {
+        const language = normalizeLanguageTag(voice.lang);
+        const exactLocale = language === requested;
+        return (exactLocale ? 0 : 100) + (voice.default ? 0 : 10) + (voice.localService ? 0 : 1);
+      };
+      return score(left) - score(right);
+    });
+    return compatible[0];
+  };
+
+  const speakWithAvailableVoice = (synth, text, language, volume, requestId) => {
+    if (requestId !== speechRequestId) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = selectSpeechVoice(synth.getVoices(), language);
+    utterance.lang = voice?.lang || language;
+    if (voice) utterance.voice = voice;
+    utterance.volume = Math.max(0, Math.min(1, Number(volume) || 0));
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    synth.speak(utterance);
+  };
+
+  const waitForVoicesAndSpeak = (synth, text, language, volume, requestId) => {
+    const finish = () => {
+      pendingSpeechCleanup?.();
+      pendingSpeechCleanup = null;
+      speakWithAvailableVoice(synth, text, language, volume, requestId);
+    };
+    const onVoicesChanged = () => {
+      if (synth.getVoices().length) finish();
+    };
+    const timer = setTimeout(finish, 1000);
+    synth.addEventListener?.("voiceschanged", onVoicesChanged);
+    pendingSpeechCleanup = () => {
+      clearTimeout(timer);
+      synth.removeEventListener?.("voiceschanged", onVoicesChanged);
+    };
+  };
 
   const download = (blob, filename) => {
     const url = URL.createObjectURL(blob);
@@ -203,12 +261,22 @@
       download(file, filename);
     },
     speak(text, language, volume) {
-      if (!window.speechSynthesis || !text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language;
-      utterance.volume = Math.max(0, Math.min(1, volume));
-      window.speechSynthesis.speak(utterance);
+      const synth = window.speechSynthesis;
+      const normalizedText = String(text || "").trim();
+      const normalizedLanguage = String(language || "").trim();
+      if (!synth || typeof SpeechSynthesisUtterance !== "function" || !normalizedText || !normalizedLanguage) return;
+
+      speechRequestId += 1;
+      const requestId = speechRequestId;
+      pendingSpeechCleanup?.();
+      pendingSpeechCleanup = null;
+      synth.cancel();
+
+      if (synth.getVoices().length) {
+        speakWithAvailableVoice(synth, normalizedText, normalizedLanguage, volume, requestId);
+      } else {
+        waitForVoicesAndSpeak(synth, normalizedText, normalizedLanguage, volume, requestId);
+      }
     },
     playTone(correct, volume) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;

@@ -22,7 +22,7 @@ Chrome / Edgeの現行安定版をTier 1とする。Kotlin/WasmGC、OPFS SyncAcc
 bash scripts/run_web_tests.sh
 ```
 
-このスクリプトはAndroid/Wasm共通test、Web archive validation、Room 3 repository contract test、production distributionを実行する。非ASCIIのworkspace pathでKotlin/Wasm linkerが失敗する既知問題を避けるため、root Gradle scriptは該当時だけOSの一時directoryへbuild outputを移す。
+このスクリプトはAndroid/Wasm共通test、Web archive validation、Room 3 repository contract test、外部リンクとWeb Speech bridgeのJavaScript回帰test、production distributionを実行する。非ASCIIのworkspace pathでKotlin/Wasm linkerが失敗する既知問題を避けるため、root Gradle scriptは該当時だけOSの一時directoryへbuild outputを移す。
 
 ブラウザではCOOP / COEPを返すHTTP serverから起動し、最低限次を確認する。
 
@@ -33,7 +33,9 @@ bash scripts/run_web_tests.sh
 5. 2タブ目はdatabaseを開かない
 6. 390×844、960×480、desktopで操作要素が欠けない
 7. 日本語・簡体中国語が同梱Noto Sans SCで欠けない
-8. consoleにuncaught errorがない
+8. 通常／シンプル、ライト／ダークのダッシュボード末尾に2つの外部リンクボタンがあり、正しいURLを新規タブで開いて元タブを保持する
+9. TTSで指定localeのvoiceが選ばれ、voice一覧の遅延読込後も発声し、別言語voiceへ誤フォールバックしない
+10. consoleにuncaught errorがない
 
 ## Studio Riziへstage
 

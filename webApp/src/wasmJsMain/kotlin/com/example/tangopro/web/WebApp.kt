@@ -359,6 +359,7 @@ private fun DashboardContent(state: WebAppState, modifier: Modifier = Modifier) 
             OutlinedButton(onClick = { showDelete = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("単語帳を削除") }
         }
         StorageCard(state)
+        ExternalWebsiteFooter()
     }
     if (showSettings) SettingsDialog(state) { showSettings = false }
     if (showGroupEdit) GroupEditDialog(state, group) { showGroupEdit = false }
@@ -369,6 +370,28 @@ private fun DashboardContent(state: WebAppState, modifier: Modifier = Modifier) 
         showReset = false; state.resetProgress()
     }) { showReset = false }
     if (showCombine) CombineDialog(state) { showCombine = false }
+}
+
+@Composable
+private fun ExternalWebsiteFooter() {
+    // Stay in the dashboard's scroll flow; never cover the study controls.
+    Column(Modifier.fillMaxWidth(), Arrangement.spacedBy(6.dp), Alignment.CenterHorizontally) {
+        OutlinedButton(
+            onClick = { openExternalWebsite("https://studio-rizi.pages.dev/") },
+            modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth().heightIn(min = 48.dp),
+            colors = neutralOutlinedButtonColors(),
+        ) {
+            Text("開発者サイトを開く", textAlign = TextAlign.Center)
+        }
+        OutlinedButton(
+            onClick = { openExternalWebsite("https://studio-rizi.pages.dev/projects/tango-pro/") },
+            modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth().heightIn(min = 48.dp),
+            colors = neutralOutlinedButtonColors(),
+        ) {
+            Text("Tango pro ホームページを開く", textAlign = TextAlign.Center)
+        }
+        Text("新しいタブで開きます", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
 }
 
 @Composable

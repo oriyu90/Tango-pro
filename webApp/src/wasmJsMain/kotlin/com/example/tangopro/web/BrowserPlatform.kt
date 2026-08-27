@@ -40,6 +40,12 @@ external fun downloadText(filename: String, text: String, mime: String)
 @JsFun("(filename, text, mime) => window.tangoProBridge.shareTextFile(filename, text, mime)")
 external fun shareTextFile(filename: String, text: String, mime: String)
 
+// Run directly from the button click so browsers retain the user activation.
+// Keep the study tab open and prevent the destination from accessing its opener.
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("(url) => { window.open(url, '_blank', 'noopener,noreferrer'); }")
+external fun openExternalWebsite(url: String)
+
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsFun("(text, language, volume) => window.tangoProBridge.speak(text, language, volume)")
 external fun speak(text: String, language: String, volume: Double)
